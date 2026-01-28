@@ -73,7 +73,8 @@ export async function getProject(projectId: string): Promise<Project | null> {
 }
 
 export async function createSession(projectId: string): Promise<Session> {
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
     .from("sessions")
     .insert({ project_id: projectId })
     .select()
@@ -118,7 +119,8 @@ export async function saveInterpretation(
     endTimeMs?: number;
   }
 ): Promise<void> {
-  const { error } = await supabase.from("interpretations").insert({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from("interpretations").insert({
     session_id: sessionId,
     original_text: originalText,
     translated_text: translatedText,

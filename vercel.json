@@ -1,14 +1,9 @@
 {
-  "framework": "next.js",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm --filter @teu-im/shared build && pnpm --filter @teu-im/ui build && pnpm --filter @teu-im/web build",
+  "buildCommand": "cd apps/web && pnpm run build",
   "outputDirectory": "apps/web/.next",
-  "devCommand": "pnpm --filter @teu-im/web dev",
-  "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": "@supabase_url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase_anon_key",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key"
-  },
   "headers": [
     {
       "source": "/api/(.*)",
