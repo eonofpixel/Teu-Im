@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { createBrowserClient } from "@/lib/supabase/browser";
 import type { Project } from "@teu-im/shared";
+import { LoadingSkeleton, Badge, EmptyState } from "@teu-im/ui";
 
 // ─── 유틸: 언어 코드 → 표시명 ──────────────────────────────
 
@@ -42,24 +43,27 @@ function getRelativeTime(dateStr: string): string {
 
 // ─── 상태 배지 ─────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    active: "bg-emerald-900/50 text-emerald-400",
-    idle: "bg-gray-800 text-gray-400",
-    ended: "bg-gray-800 text-gray-500",
-  };
-  const labels: Record<string, string> = {
-    active: "진행 중",
-    idle: "대기",
-    ended: "종료",
-  };
+const BADGE_STATUS_MAP: Record<string, import("@teu-im/ui").BadgeStatus> = {
+  active: "active",
+  idle: "paused",
+  ended: "completed",
+};
 
+const BADGE_LABELS: Record<string, string> = {
+  active: "진행 중",
+  idle: "대기",
+  ended: "종료",
+};
+
+function StatusBadge({ status }: { status: string }) {
   return (
-    <span
-      className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${styles[status] ?? styles.ended}`}
+    <Badge
+      status={BADGE_STATUS_MAP[status] ?? "default"}
+      size="sm"
+      pulse={status === "active"}
     >
-      {labels[status] ?? status}
-    </span>
+      {BADGE_LABELS[status] ?? status}
+    </Badge>
   );
 }
 
@@ -228,22 +232,21 @@ function DeleteConfirmModal({
 
 function EmptyProjects() {
   return (
-    <div className="rounded-xl border border-dashed border-gray-700 p-12 text-center animate-slide-up">
-      <div className="mx-auto w-16 h-16 rounded-2xl bg-gray-800 flex items-center justify-center mb-4">
-        <FolderIcon />
-      </div>
-      <h3 className="text-lg font-medium text-white mb-1">프로젝트가 없습니다</h3>
-      <p className="text-sm text-gray-500 mb-6 max-w-xs mx-auto">
-        새 프로젝트를 만들어 실시간 통역을 시작하세요
-      </p>
-      <Link
-        href="/projects/new"
-        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition-colors"
-      >
-        <PlusIcon />
-        새 프로젝트 만들기
-      </Link>
-    </div>
+    <EmptyState
+      icon={<FolderIcon />}
+      title="프로젝트가 없습니다"
+      description="새 프로젝트를 만들어 실시간 통역을 시작하세요"
+      action={
+        <Link
+          href="/projects/new"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition-colors"
+        >
+          <PlusIcon />
+          새 프로젝트 만들기
+        </Link>
+      }
+      className="rounded-xl border border-dashed border-gray-700 animate-slide-up"
+    />
   );
 }
 
@@ -531,18 +534,18 @@ export default function ProjectsPage() {
     return (
       <div className="max-w-7xl">
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <div className="h-7 w-20 bg-gray-800 rounded animate-pulse" />
-            <div className="h-4 w-40 bg-gray-800 rounded mt-2 animate-pulse" />
+          <div className="flex flex-col gap-2">
+            <LoadingSkeleton variant="custom" width="5rem" height="1.75rem" borderRadius="var(--radius-sm)" />
+            <LoadingSkeleton variant="custom" width="10rem" height="1rem" borderRadius="var(--radius-sm)" />
           </div>
-          <div className="h-9 w-28 bg-gray-800 rounded-lg animate-pulse" />
+          <LoadingSkeleton variant="button" width="7rem" height="2.25rem" />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
           {[0, 1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="rounded-xl border border-gray-800 bg-gray-900 p-5 animate-pulse">
-              <div className="h-5 w-48 bg-gray-800 rounded mb-2" />
-              <div className="h-4 w-32 bg-gray-800 rounded" />
-              <div className="h-4 w-40 bg-gray-800 rounded mt-4" />
+            <div key={i} className="rounded-xl border border-gray-800 bg-gray-900 p-5">
+              <LoadingSkeleton variant="custom" width="12rem" height="1.25rem" borderRadius="var(--radius-sm)" />
+              <LoadingSkeleton variant="custom" width="8rem" height="1rem" borderRadius="var(--radius-sm)" className="mt-2" />
+              <LoadingSkeleton variant="custom" width="10rem" height="1rem" borderRadius="var(--radius-sm)" className="mt-4" />
             </div>
           ))}
         </div>

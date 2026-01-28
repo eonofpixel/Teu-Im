@@ -9,8 +9,13 @@ import {
   pauseSoniox,
   resumeSoniox,
   isSonioxActive,
+  getMediaStream,
   type InterpretationResult,
 } from "@/lib/soniox";
+import { LiveWaveform } from "@/components/LiveWaveform";
+import { SessionQRCode } from "@/components/SessionQRCode";
+import { useAudiencePresence } from "@/hooks/useAudiencePresence";
+import { AudienceCounter } from "@/components/AudienceCounter";
 
 // ─── 유틸: 언어 코드 → 표시명 ──────────────────────────────
 
@@ -219,6 +224,7 @@ export default function LivePage() {
     useState<RecordingStatus>("stopped");
   const [sonioxConnected, setSonioxConnected] = useState(false);
   const [sonioxError, setSonioxError] = useState<string | null>(null);
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
 
   // ─── 실시간 원문 / 번역 ─────────────────────────────────
   const [currentOriginalText, setCurrentOriginalText] = useState("");
@@ -232,6 +238,16 @@ export default function LivePage() {
 
   // ─── 세션 생성 로딩 ─────────────────────────────────────
   const [creatingSession, setCreatingSession] = useState(false);
+
+  // ─── 청중 공유 섹션 확장 상태 ──────────────────────────
+  const [audienceShareOpen, setAudienceShareOpen] = useState(false);
+
+  // ─── 청중 존재감 추적 (presenter는 수동 관찰 모드) ──────────
+  const audiencePresence = useAudiencePresence({
+    sessionId: activeSessionId,
+    selectedLanguage: null,
+    passive: true,
+  });
 
   // ─── 세션 저장 ──────────────────────────────────────────
   const [saving, setSaving] = useState(false);
@@ -368,9 +384,16 @@ export default function LivePage() {
 
   const handleConnectionChange = useCallback((connected: boolean) => {
     setSonioxConnected(connected);
-    if (!connected && (recordingStatus === "recording" || recordingStatus === "paused")) {
-      setRecordingStatus("stopped");
-      setSessionStatus("none");
+    if (connected) {
+      // 연결되면 미디어 스트림 가져오기
+      setAudioStream(getMediaStream());
+    } else {
+      // 연결 해제되면 스트림 정리
+      setAudioStream(null);
+      if (recordingStatus === "recording" || recordingStatus === "paused") {
+        setRecordingStatus("stopped");
+        setSessionStatus("none");
+      }
     }
   }, [recordingStatus]);
 
@@ -444,6 +467,7 @@ export default function LivePage() {
       console.error("Soniox 중지 오류:", error);
     }
     setRecordingStatus("stopped");
+    setAudioStream(null);
   }, []);
 
   // ─── 녹음 일시정지 ─────────────────────────────────────
@@ -659,6 +683,80 @@ export default function LivePage() {
           </p>
         )}
       </div>
+
+      {/* 청중 공유 */}
+      {selectedProject && (
+        <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
+          {/* 토글 헤더 */}
+          <button
+            type="button"
+            onClick={() => setAudienceShareOpen((prev) => !prev)}
+            className="w-full flex items-center justify-between px-6 py-4 text-left transition-colors hover:bg-gray-800/50"
+            aria-expanded={audienceShareOpen}
+          >
+            <div className="flex items-center gap-2.5">
+              {/* Share icon */}
+              <svg
+                className="w-4 h-4 text-indigo-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8m-2-2l-6-6m0 0L8 12m4-6v12"
+                />
+              </svg>
+              <h2 className="text-sm font-semibold text-white">청중 공유</h2>
+            </div>
+            {/* ChevronDown icon — rotated when open */}
+            <svg
+              className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${audienceShareOpen ? "rotate-180" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+
+          {/* 서브타이틀 (항상 표시) */}
+          <p className="text-xs text-gray-500 px-6 pb-3">
+            QR 코드 또는 코드를 공유하여 청중이 실시간 통역을 볼 수 있습니다
+          </p>
+
+          {/* 접기/펼치기 콘텐츠 — desktop 기본 전개, mobile 기본 접힘 */}
+          {/* Mobile: audienceShareOpen 상태로 제어 / Desktop: 항상 열림 (sm:block) */}
+          <div className={`${audienceShareOpen ? "block" : "hidden"} sm:block`}>
+            <div className="px-4 pb-4">
+              <SessionQRCode
+                projectCode={selectedProject.code}
+                password={selectedProject.password}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 청중 카운터 — 세션 활성 중에만 표시 */}
+      <AudienceCounter
+        presence={audiencePresence}
+        visible={sessionStatus === "active" || sessionStatus === "paused"}
+      />
+
+      {/* 오디오 웨이브폼 */}
+      <LiveWaveform
+        stream={audioStream}
+        isRecording={isRecording}
+        className="rounded-xl border border-gray-800 bg-gray-900 p-4"
+      />
 
       {/* 녹음 제어 버튼 행 */}
       <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">

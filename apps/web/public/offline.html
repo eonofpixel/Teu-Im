@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teu-Im - 오프라인</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      min-height: 100%;
+      background-color: #030712;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 0 24px;
+      text-align: center;
+    }
+
+    .glow {
+      position: absolute;
+      top: 25%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 384px;
+      height: 384px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #6366f1 0%, transparent 70%);
+      opacity: 0.1;
+      filter: blur(48px);
+      pointer-events: none;
+    }
+
+    .container {
+      position: relative;
+      z-index: 10;
+      max-width: 360px;
+      width: 100%;
+    }
+
+    .icon-box {
+      width: 80px;
+      height: 80px;
+      border-radius: 16px;
+      border: 1px solid #1f2937;
+      background-color: #111827;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+    }
+
+    .icon-box svg {
+      width: 36px;
+      height: 36px;
+      color: #6b7280;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    p {
+      font-size: 14px;
+      color: #6b7280;
+      line-height: 1.6;
+      max-width: 280px;
+      margin: 0 auto 32px;
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      color: #fff;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-secondary {
+      color: rgba(160, 160, 175, 0.8);
+      background: rgba(30, 32, 42, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="container">
+    <div class="icon-box">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.176l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+      </svg>
+    </div>
+    <h1>인터넷 연결이 없습니다</h1>
+    <p>
+      Teu-Im 청중 앱을 사용하려면 인터넷 연결이 필요합니다.<br/>
+      연결을 확인한 후 다시 시도해주세요.
+    </p>
+    <div class="actions">
+      <button class="btn-primary" onclick="window.location.reload()">다시 시도</button>
+      <button class="btn-secondary" onclick="window.history.back()">뒤로 가기</button>
+    </div>
+  </div>
+</body>
+</html>

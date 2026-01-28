@@ -28,6 +28,12 @@ jobs:
           - platform: windows-latest
             args: ''
             name: Windows-x64
+          - platform: ubuntu-22.04
+            args: '--target x86_64-unknown-linux-gnu'
+            name: Linux-x64
+          - platform: ubuntu-22.04
+            args: '--target aarch64-unknown-linux-gnu'
+            name: Linux-arm64
 
     runs-on: ${{ matrix.platform }}
     name: Build (${{ matrix.name }})
@@ -35,6 +41,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install Linux system dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install ARM64 cross-compilation dependencies
+        if: matrix.name == 'Linux-arm64'
+        run: |
+          sudo apt-get install -y gcc-aarch64-linux-gnu \
+            libwebkit2gtk-4.1-dev:aarch64 \
+            libappindicator3-dev:aarch64 \
+            librsvg2-dev:aarch64 \
+            libpatchelf-dev:aarch64 || true
+          sudo dpkg --add-architecture aarch64
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -61,7 +83,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || matrix.platform == 'ubuntu-22.04' && 'x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu' || '' }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -75,6 +97,10 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # ARM64 cross-compilation env vars
+          PKG_CONFIG_SYSROOT_DIR: ${{ matrix.name == 'Linux-arm64' && '/usr/aarch64-linux-gnu' || '' }}
+          PKG_CONFIG_PATH: ${{ matrix.name == 'Linux-arm64' && '/usr/lib/aarch64-linux-gnu/pkgconfig' || '' }}
+          CC: ${{ matrix.name == 'Linux-arm64' && 'aarch64-linux-gnu-gcc' || '' }}
           # macOS signing (optional, uncomment when certificates are ready)
           # APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           # APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -93,6 +119,8 @@ jobs:
             - **Windows**: `.exe` 또는 `.msi` 파일 다운로드
             - **macOS (Apple Silicon)**: `_aarch64.dmg` 파일 다운로드
             - **macOS (Intel)**: `_x64.dmg` 파일 다운로드
+            - **Linux (x64)**: `.deb` 또는 `.AppImage` 파일 다운로드
+            - **Linux (ARM64)**: `_aarch64.deb` 또는 `_aarch64.AppImage` 파일 다운로드
 
             ## 변경사항
 
@@ -101,6 +129,59 @@ jobs:
           prerelease: false
           args: ${{ matrix.args }}
           projectPath: apps/desktop
+
+  # Generate a single checksums.txt after all platform builds complete
+  generate-checksums:
+    needs: build-tauri
+    runs-on: ubuntu-latest
+    name: Generate Checksums
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Fetch release assets and compute SHA256 checksums
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          REPO="${GITHUB_REPOSITORY}"
+          API="https://api.github.com/repos/${REPO}/releases/tags/${TAG}"
+
+          # Fetch release metadata
+          RELEASE=$(curl -sSL -H "Authorization: Bearer ${GITHUB_TOKEN}" "$API")
+          UPLOAD_URL=$(echo "$RELEASE" | jq -r '.upload_url' | sed 's/{?name,label}//')
+
+          # Download each distributable asset and compute SHA256
+          : > checksums.txt
+          echo "$RELEASE" | jq -r '.assets[] | select(.name | test("\\.(dmg|exe|msi|deb|AppImage)$"; "i")) | "\(.name)\t\(.browser_download_url)"' | \
+          while IFS=$'\t' read -r asset_name asset_url; do
+            echo "Downloading ${asset_name}..."
+            curl -sSL -H "Authorization: Bearer ${GITHUB_TOKEN}" -o "${asset_name}" "${asset_url}"
+            HASH=$(sha256sum "${asset_name}" | awk '{print $1}')
+            echo "${HASH}  ${asset_name}" >> checksums.txt
+            rm -f "${asset_name}"
+          done
+
+          sort -k2 checksums.txt -o checksums.txt
+          echo "=== checksums.txt ==="
+          cat checksums.txt
+
+      - name: Upload checksums.txt to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          REPO="${GITHUB_REPOSITORY}"
+          API="https://api.github.com/repos/${REPO}/releases/tags/${TAG}"
+          UPLOAD_URL=$(curl -sSL -H "Authorization: Bearer ${GITHUB_TOKEN}" "$API" | jq -r '.upload_url' | sed 's/{?name,label}//')
+
+          curl -sSL \
+            -X POST \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @checksums.txt \
+            "${UPLOAD_URL}?name=checksums.txt&label=SHA256+Checksums"
 
   # Web apps are deployed automatically by Vercel
   # This job just verifies the build

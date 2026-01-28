@@ -1,0 +1,32 @@
+{
+  "name": "Teu-Im 청중",
+  "short_name": "Teu-Im",
+  "description": "실시간 실제 통역 관리 플랫폼",
+  "start_url": "/audience",
+  "display": "standalone",
+  "theme_color": "#4f46e5",
+  "background_color": "#030712",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "categories": ["utilities"]
+}

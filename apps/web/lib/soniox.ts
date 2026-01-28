@@ -403,6 +403,10 @@ export function getCurrentSequence(): number {
   return sequence;
 }
 
+export function getMediaStream(): MediaStream | null {
+  return mediaStream || multiLangMediaStream;
+}
+
 // ============================================================================
 // 다중 언어 WebSocket 관리
 // ============================================================================
