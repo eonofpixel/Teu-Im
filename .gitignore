@@ -1,0 +1,32 @@
+# Dependencies
+node_modules
+
+# Build outputs
+dist
+.next
+target
+
+# Turborepo
+.turbo
+
+# Environment
+.env
+.env.local
+.env.development
+.env.production
+
+# Logs
+*.log
+logs/
+
+# Docker
+docker-compose.override.yml
+
+# Tauri build artifacts
+apps/desktop/src-tauri/target
+apps/desktop/src-tauri/WixToolset*
+apps/desktop/src-tauri/dist
+
+# OS
+.DS_Store
+Thumbs.db

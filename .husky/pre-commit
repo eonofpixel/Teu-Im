@@ -1,0 +1,9 @@
+#!/usr/sh
+set -e
+
+# ─── Teu-Im Pre-Commit Hook ─────────────────────────────────────────────
+# Runs lint-staged on staged files before every commit.
+# Setup: pnpm install (husky auto-installs via postinstall script)
+# ────────────────────────────────────────────────────────────────────────
+
+pnpm lint-staged

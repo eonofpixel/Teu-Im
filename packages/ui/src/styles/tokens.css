@@ -1,0 +1,263 @@
+/**
+ * Design Tokens - Teu-Im Design System
+ *
+ * A dark-first design system optimized for focus and professional use.
+ * All colors, spacing, and effects are defined as CSS custom properties
+ * for consistent theming across web, desktop, and mobile platforms.
+ */
+
+:root {
+  /* ═══════════════════════════════════════════════════════════════════════════
+     COLORS - Dark Theme (Default)
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  /* Background Layers - Darkest to Lightest */
+  --color-bg-primary: #030712;      /* gray-950 - Main app background */
+  --color-bg-secondary: #111827;    /* gray-900 - Cards, panels */
+  --color-bg-tertiary: #1f2937;     /* gray-800 - Nested elements */
+  --color-bg-elevated: #374151;     /* gray-700 - Hover states, dropdowns */
+  --color-bg-overlay: rgba(3, 7, 18, 0.8); /* Modal/drawer backdrop */
+
+  /* Text Hierarchy */
+  --color-text-primary: #f9fafb;    /* gray-50 - Headings, important text */
+  --color-text-secondary: #d1d5db;  /* gray-300 - Body text */
+  --color-text-muted: #9ca3af;      /* gray-400 - Captions, placeholders */
+  --color-text-disabled: #6b7280;   /* gray-500 - Disabled elements */
+  --color-text-inverse: #030712;    /* gray-950 - Text on light backgrounds */
+
+  /* Brand Colors - Indigo */
+  --color-brand-primary: #6366f1;   /* indigo-500 - Primary actions */
+  --color-brand-hover: #4f46e5;     /* indigo-600 - Hover state */
+  --color-brand-active: #4338ca;    /* indigo-700 - Active/pressed state */
+  --color-brand-muted: #312e81;     /* indigo-900 - Subtle backgrounds */
+  --color-brand-light: #818cf8;     /* indigo-400 - Highlights, links */
+  --color-brand-subtle: rgba(99, 102, 241, 0.1); /* Subtle brand tint */
+
+  /* Semantic Status Colors */
+  --color-success: #10b981;         /* emerald-500 */
+  --color-success-light: #34d399;   /* emerald-400 */
+  --color-success-muted: #064e3b;   /* emerald-900 */
+  --color-success-subtle: rgba(16, 185, 129, 0.1);
+
+  --color-warning: #f59e0b;         /* amber-500 */
+  --color-warning-light: #fbbf24;   /* amber-400 */
+  --color-warning-muted: #78350f;   /* amber-900 */
+  --color-warning-subtle: rgba(245, 158, 11, 0.1);
+
+  --color-error: #ef4444;           /* red-500 */
+  --color-error-light: #f87171;     /* red-400 */
+  --color-error-muted: #7f1d1d;     /* red-900 */
+  --color-error-subtle: rgba(239, 68, 68, 0.1);
+
+  --color-info: #3b82f6;            /* blue-500 */
+  --color-info-light: #60a5fa;      /* blue-400 */
+  --color-info-muted: #1e3a8a;      /* blue-900 */
+  --color-info-subtle: rgba(59, 130, 246, 0.1);
+
+  /* Borders */
+  --color-border: #374151;          /* gray-700 */
+  --color-border-subtle: #1f2937;   /* gray-800 */
+  --color-border-focus: #6366f1;    /* indigo-500 */
+  --color-border-error: #ef4444;    /* red-500 */
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     SPACING SCALE
+     Based on 4px grid system (0.25rem base)
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  --space-0: 0;
+  --space-px: 1px;
+  --space-0-5: 0.125rem;  /* 2px */
+  --space-1: 0.25rem;     /* 4px */
+  --space-1-5: 0.375rem;  /* 6px */
+  --space-2: 0.5rem;      /* 8px */
+  --space-2-5: 0.625rem;  /* 10px */
+  --space-3: 0.75rem;     /* 12px */
+  --space-3-5: 0.875rem;  /* 14px */
+  --space-4: 1rem;        /* 16px */
+  --space-5: 1.25rem;     /* 20px */
+  --space-6: 1.5rem;      /* 24px */
+  --space-7: 1.75rem;     /* 28px */
+  --space-8: 2rem;        /* 32px */
+  --space-9: 2.25rem;     /* 36px */
+  --space-10: 2.5rem;     /* 40px */
+  --space-11: 2.75rem;    /* 44px */
+  --space-12: 3rem;       /* 48px */
+  --space-14: 3.5rem;     /* 56px */
+  --space-16: 4rem;       /* 64px */
+  --space-20: 5rem;       /* 80px */
+  --space-24: 6rem;       /* 96px */
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     BORDER RADIUS
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  --radius-none: 0;
+  --radius-sm: 0.25rem;   /* 4px - Small elements */
+  --radius-md: 0.375rem;  /* 6px - Default */
+  --radius-lg: 0.5rem;    /* 8px - Buttons, inputs */
+  --radius-xl: 0.75rem;   /* 12px - Cards */
+  --radius-2xl: 1rem;     /* 16px - Modals */
+  --radius-3xl: 1.5rem;   /* 24px - Large cards */
+  --radius-full: 9999px;  /* Pills, avatars */
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     TYPOGRAPHY
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  /* Font Families */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", Consolas, monospace;
+
+  /* Font Sizes */
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+  --text-3xl: 1.875rem;   /* 30px */
+  --text-4xl: 2.25rem;    /* 36px */
+
+  /* Line Heights */
+  --leading-none: 1;
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --leading-loose: 2;
+
+  /* Font Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Letter Spacing */
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     TRANSITIONS
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  /* Durations */
+  --duration-instant: 50ms;
+  --duration-fast: 100ms;
+  --duration-normal: 150ms;
+  --duration-moderate: 200ms;
+  --duration-slow: 300ms;
+  --duration-slower: 500ms;
+
+  /* Timing Functions */
+  --ease-linear: linear;
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* Composite Transitions */
+  --transition-fast: var(--duration-fast) var(--ease-out);
+  --transition-normal: var(--duration-normal) var(--ease-in-out);
+  --transition-moderate: var(--duration-moderate) var(--ease-in-out);
+  --transition-slow: var(--duration-slow) var(--ease-out);
+  --transition-colors: color var(--duration-normal) var(--ease-in-out),
+                       background-color var(--duration-normal) var(--ease-in-out),
+                       border-color var(--duration-normal) var(--ease-in-out);
+  --transition-transform: transform var(--duration-normal) var(--ease-out);
+  --transition-opacity: opacity var(--duration-normal) var(--ease-in-out);
+  --transition-all: all var(--duration-normal) var(--ease-in-out);
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     SHADOWS
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+
+  /* Colored Shadows */
+  --shadow-brand: 0 4px 14px 0 rgba(99, 102, 241, 0.3);
+  --shadow-error: 0 4px 14px 0 rgba(239, 68, 68, 0.3);
+  --shadow-success: 0 4px 14px 0 rgba(16, 185, 129, 0.3);
+
+  /* Focus Ring */
+  --ring-width: 2px;
+  --ring-offset: 2px;
+  --ring-color: var(--color-brand-primary);
+  --ring-offset-color: var(--color-bg-primary);
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     Z-INDEX SCALE
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  --z-base: 0;
+  --z-dropdown: 50;
+  --z-sticky: 100;
+  --z-fixed: 200;
+  --z-modal-backdrop: 300;
+  --z-modal: 400;
+  --z-popover: 500;
+  --z-tooltip: 600;
+  --z-toast: 700;
+  --z-max: 9999;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     COMPONENT-SPECIFIC TOKENS
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  /* Button */
+  --button-height-sm: 2rem;        /* 32px */
+  --button-height-md: 2.5rem;      /* 40px */
+  --button-height-lg: 3rem;        /* 48px */
+  --button-padding-sm: var(--space-3);
+  --button-padding-md: var(--space-4);
+  --button-padding-lg: var(--space-6);
+
+  /* Input */
+  --input-height-sm: 2rem;         /* 32px */
+  --input-height-md: 2.5rem;       /* 40px */
+  --input-height-lg: 3rem;         /* 48px */
+
+  /* Card */
+  --card-padding: var(--space-6);
+  --card-radius: var(--radius-xl);
+
+  /* Modal */
+  --modal-max-width-sm: 24rem;     /* 384px */
+  --modal-max-width-md: 28rem;     /* 448px */
+  --modal-max-width-lg: 32rem;     /* 512px */
+  --modal-max-width-xl: 36rem;     /* 576px */
+
+  /* Toast */
+  --toast-max-width: 24rem;        /* 384px */
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIGHT THEME (Optional Override)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="light"] {
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f9fafb;
+  --color-bg-tertiary: #f3f4f6;
+  --color-bg-elevated: #e5e7eb;
+  --color-bg-overlay: rgba(255, 255, 255, 0.8);
+
+  --color-text-primary: #111827;
+  --color-text-secondary: #374151;
+  --color-text-muted: #6b7280;
+  --color-text-disabled: #9ca3af;
+  --color-text-inverse: #f9fafb;
+
+  --color-border: #e5e7eb;
+  --color-border-subtle: #f3f4f6;
+
+  --shadow-brand: 0 4px 14px 0 rgba(99, 102, 241, 0.2);
+}

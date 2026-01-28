@@ -1,0 +1,68 @@
+version: "3.9"
+
+# =============================================================================
+# Teu-Im Local Development Stack
+# =============================================================================
+# Usage:
+#   docker compose up -d            # Start all services
+#   docker compose down             # Stop and remove containers
+#   docker compose logs -f web      # Tail web app logs
+#
+# Prerequisites:
+#   1. Create apps/web/.env.local from apps/web/.env.example
+#   2. Create apps/desktop/.env from apps/desktop/.env.example
+#   3. Install Node.js >= 20 and pnpm (for host-based development)
+#
+# Notes:
+#   - Supabase is managed as a cloud service (supabase.co) rather than
+#     self-hosted. This compose file provides the Next.js web app and
+#     a Redis instance for future session/cache needs.
+#   - The web service mounts the source code for live reload via Next.js.
+# =============================================================================
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: teu-im-web
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: "3000"
+    env_file:
+      - apps/web/.env.local
+    volumes:
+      - ./apps/web:/app/apps/web
+      - ./packages:/app/packages
+      - /app/node_modules
+      - /app/apps/web/node_modules
+      - /app/apps/web/.next
+    depends_on:
+      - redis
+    networks:
+      - teu-im-dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/projects"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  redis:
+    image: redis:7-alpine
+    container_name: teu-im-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - teu-im-dev
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  teu-im-dev:
+    driver: bridge
