@@ -549,15 +549,34 @@ function AccountSection() {
 
   const supabase = createBrowserClient();
 
-  const handlePasswordChange = () => {
-    // Supabase Auth의 비밀번호 변경 plowflow를 트리거
-    // 실제로는 이메일로 비밀번호 재설정 링크 전송
-    supabase.auth.resetPasswordForEmail(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any).auth.session?.user?.email ?? "",
-      { redirectTo: `${window.location.origin}/auth/callback/credentials` }
-    );
-    alert("비밀번호 재설정 이메일이 전송되었습니다.");
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+
+  const handlePasswordChange = async () => {
+    setPasswordLoading(true);
+    setPasswordSuccess(null);
+    setPasswordError(null);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const email = data.session?.user?.email ?? "";
+      if (!email) {
+        setPasswordError("이메일 주소를 확인할 수 없습니다.");
+        setPasswordLoading(false);
+        return;
+      }
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback/credentials`,
+      });
+      if (error) {
+        setPasswordError("비밀번호 재설정 이메일 전송에 실패했습니다.");
+      } else {
+        setPasswordSuccess("비밀번호 재설정 이메일이 전송되었습니다.");
+      }
+    } catch {
+      setPasswordError("오류가 발생했습니다. 다시 시도해주세요.");
+    }
+    setPasswordLoading(false);
   };
 
   const handleLogout = async () => {
@@ -597,15 +616,21 @@ function AccountSection() {
 
   return (
     <SectionCard title="계정 관리" subtitle="계정 관련 작업을 수행하세요.">
-      <StatusMessage error={error} />
+      <StatusMessage error={error} success={passwordSuccess} />
+      {passwordError && (
+        <p className="text-sm text-red-400 bg-red-900/20 rounded-lg px-3 py-2 mb-4">
+          {passwordError}
+        </p>
+      )}
 
       {/* 비밀번호 변경 & 로그아웃 */}
       <div className="flex gap-3 flex-wrap">
         <button
           onClick={handlePasswordChange}
-          className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800"
+          disabled={passwordLoading}
+          className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          비밀번호 변경
+          {passwordLoading ? "전송 중..." : "비밀번호 변경"}
         </button>
         <button
           onClick={handleLogout}

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogoutButton } from "@/components/logout-button";
@@ -67,23 +66,7 @@ function SettingsIcon() {
   );
 }
 
-function HamburgerIcon() {
-  return (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-    </svg>
-  );
-}
-
-// ─── NavLink 컴포넌트 (활성 상태 표시) ────────────────────
+// ─── NavLink 컴포넌트 (사이드바 - 활성 상태 표시) ──────────
 
 function NavLink({ href, label, icon: Icon, badge, pathname }: NavItem & { pathname: string }) {
   const isActive = pathname === href || pathname.startsWith(href + "/");
@@ -107,6 +90,33 @@ function NavLink({ href, label, icon: Icon, badge, pathname }: NavItem & { pathn
         <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-indigo-600/20 text-indigo-300">
           {badge}
         </span>
+      )}
+    </Link>
+  );
+}
+
+// ─── MobileNavLink 컴포넌트 (하단 바 - 아이콘 + 라벨 세로 배치) ──
+
+function MobileNavLink({ href, label, icon: Icon, badge, pathname }: NavItem & { pathname: string }) {
+  const isActive = pathname === href || pathname.startsWith(href + "/");
+
+  return (
+    <Link
+      href={href}
+      className={`
+        relative flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors duration-150
+        ${isActive ? "text-indigo-400" : "text-gray-500"}
+      `}
+    >
+      {/* 활성 상태 인디케이터 (상단 라인) */}
+      {isActive && (
+        <span className="absolute top-0 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full bg-indigo-400" />
+      )}
+      <Icon />
+      <span className="text-xs font-medium leading-none">{label}</span>
+      {/* 배지 (NEW 등) */}
+      {badge && (
+        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-indigo-400" />
       )}
     </Link>
   );
@@ -164,7 +174,6 @@ export function DashboardClient({
   userName: string;
 }) {
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   // 현재 페이지 타이틀 추론
   const currentNav = [...NAV_ITEMS].reverse().find(
@@ -173,57 +182,38 @@ export function DashboardClient({
 
   return (
     <div className="flex h-screen bg-gray-950">
-      {/* 모바일 오버레이 */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-
-      {/* 사이드바 - デ스クトップ 항상 표시 / 모바일 드로워 */}
-      <aside
-        className={`
-          fixed lg:static inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-gray-800 bg-gray-900 transition-transform duration-300 ease-in-out
-          ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0
-        `}
-      >
+      {/* ── 사이드바 (md 이상 = 항상 표시, md 미만 숨침) ── */}
+      <aside className="hidden md:flex w-64 flex-col border-r border-gray-800 bg-gray-900 h-screen sticky top-0 flex-shrink-0">
         <SidebarContent pathname={pathname} userEmail={userEmail} userName={userName} />
       </aside>
 
-      {/* 메인 콘텐츠 */}
+      {/* ── 메인 콘텐츠 영역 ── */}
       <div className="flex-1 flex flex-col overflow-auto min-w-0">
-        {/* 헤더 */}
-        <header className="sticky top-0 z-10 flex h-16 min-h-16 items-center border-b border-gray-800 bg-gray-950 px-4 lg:px-6">
-          {/* 모바일 해밀턴 버거 + 현재 페이지 타이틀 */}
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden p-2 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition-colors mr-3"
-            aria-label="메뉴 열기"
-          >
-            {mobileOpen ? <CloseIcon /> : <HamburgerIcon />}
-          </button>
-          <h2 className="text-base font-semibold text-white lg:hidden">
+        {/* 헤더 - 모바일: 타이틀만 / 데스크톱: 기본 헤더 유지 */}
+        <header className="sticky top-0 z-10 flex h-14 min-h-14 items-center border-b border-gray-800 bg-gray-950 px-4 md:px-6">
+          {/* 모바일 헤더: 페이지 타이틀만 표시 */}
+          <h2 className="text-base font-semibold text-white md:hidden">
             {currentNav?.label ?? "대시보드"}
           </h2>
 
-          <div className="flex-1 lg:flex-initial" />
-
-          {/* 헤더 우측 - 모바일용 사용자 정보 & 로그아웃 */}
-          <div className="flex items-center gap-2 lg:hidden">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-600 text-xs font-medium text-white">
-              {userEmail?.[0]?.toUpperCase() ?? "?"}
-            </div>
-            <LogoutButton />
-          </div>
+          {/* 데스크톱 헤더 우측 영역 */}
+          <div className="flex-1" />
         </header>
 
-        {/* 페이지 콘텐츠 */}
-        <main className="flex-1 p-4 lg:p-6 animate-fade-in">
+        {/* 페이지 콘텐츠 - 모바일에서 하단 바 높이만큼 여백 추가 */}
+        <main className="flex-1 p-4 lg:p-6 pb-24 md:pb-6 animate-fade-in">
           {children}
         </main>
       </div>
+
+      {/* ── 모바일 하단 네비게이션 바 (md 미만에서만 표시) ── */}
+      <nav className="fixed bottom-0 left-0 right-0 z-20 md:hidden bg-gray-900/95 backdrop-blur-sm border-t border-gray-800 [padding-bottom:env(safe-area-inset-bottom)]">
+        <div className="flex items-center justify-around h-14">
+          {NAV_ITEMS.map((item) => (
+            <MobileNavLink key={item.href} {...item} pathname={pathname} />
+          ))}
+        </div>
+      </nav>
     </div>
   );
 }

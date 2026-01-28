@@ -338,6 +338,14 @@ export default function AnalyticsDashboard({ projectId }: { projectId: string })
         />
       </div>
 
+      {/* 세션이 없는 경우 빈 상태 안내 */}
+      {summary && summary.totals.sessions_count === 0 && (
+        <div className="rounded-xl border border-dashed border-gray-700 p-8 text-center">
+          <p className="text-sm text-gray-500 mb-2">아직 세션이 없습니다</p>
+          <p className="text-xs text-gray-600">세션을 시작하면 분석 차트와 통계가 표시되겠습니다</p>
+        </div>
+      )}
+
       {/* 차트 섹션 (선택 기간) */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* 사용량 차트 (세션 수) */}

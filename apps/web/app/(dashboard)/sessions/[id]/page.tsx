@@ -69,27 +69,48 @@ function formatDateLocal(iso: string): string {
   });
 }
 
-// ─── 유틸: SRT 생성 ────────────────────────────────────────
+// ─── 유틸: 자막 생성 (SRT / VTT) ───────────────────────────
 
-function generateSRT(
+type SubtitleFormat = "srt" | "vtt";
+type SubtitleLanguage = "original" | "translated";
+
+function generateSubtitle(
   interpretations: InterpretationData[],
-  mode: "original" | "translated"
+  mode: SubtitleLanguage,
+  format: SubtitleFormat
 ): string {
-  const sorted = [...interpretations].sort((a, b) => a.sequence - b.sequence);
-  let index = 1;
-  let srt = "";
+  const sorted = [...interpretations]
+    .filter((i) => i.startTimeMs !== null && i.endTimeMs !== null)
+    .sort((a, b) => (a.startTimeMs ?? 0) - (b.startTimeMs ?? 0));
 
-  for (const item of sorted) {
-    const startMs = item.startTimeMs ?? (index - 1) * 3000;
-    const endMs = item.endTimeMs ?? startMs + 2500;
-    const text = mode === "original" ? item.originalText : item.translatedText;
+  // 타임스탬프가 있는 항목이 없으면 fallback: sequence 순 + 간격 배정
+  const items =
+    sorted.length > 0
+      ? sorted
+      : [...interpretations].sort((a, b) => a.sequence - b.sequence);
 
-    srt += `${index}\n`;
-    srt += `${formatTimestamp(startMs)} --> ${formatTimestamp(endMs)}\n`;
-    srt += `${text}\n\n`;
-    index++;
+  if (format === "vtt") {
+    let vtt = "WEBVTT\n\n";
+    items.forEach((item, idx) => {
+      const startMs = item.startTimeMs ?? idx * 3000;
+      const endMs = item.endTimeMs ?? startMs + 2500;
+      const text = mode === "original" ? item.originalText : item.translatedText;
+      vtt += `${formatTimestamp(startMs).replace(",", ".")} --> ${formatTimestamp(endMs).replace(",", ".")}\n`;
+      vtt += `${text}\n\n`;
+    });
+    return vtt;
   }
 
+  // SRT
+  let srt = "";
+  items.forEach((item, idx) => {
+    const startMs = item.startTimeMs ?? idx * 3000;
+    const endMs = item.endTimeMs ?? startMs + 2500;
+    const text = mode === "original" ? item.originalText : item.translatedText;
+    srt += `${idx + 1}\n`;
+    srt += `${formatTimestamp(startMs)} --> ${formatTimestamp(endMs)}\n`;
+    srt += `${text}\n\n`;
+  });
   return srt;
 }
 
@@ -458,7 +479,8 @@ function ExportSection({
   sessionName: string;
 }) {
   const [previewLang, setPreviewLang] = useState<string | null>(null);
-  const [previewMode, setPreviewMode] = useState<"original" | "translated">("translated");
+  const [previewMode, setPreviewMode] = useState<SubtitleLanguage>("translated");
+  const [previewFormat, setPreviewFormat] = useState<SubtitleFormat>("srt");
 
   // 타겟 언어별로 해석 그룹화
   const grouped = interpretations.reduce<Record<string, InterpretationData[]>>(
@@ -477,20 +499,24 @@ function ExportSection({
     return (
       <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
         <h3 className="text-sm font-semibold text-white mb-4">내보내기</h3>
-        <p className="text-sm text-gray-500">내보내기할 해석 내용이 없습니다</p>
+        <div className="rounded-lg border border-dashed border-gray-700 p-8 text-center">
+          <p className="text-sm text-gray-500">내보내기할 해석 내용이 없습니다</p>
+        </div>
       </div>
     );
   }
 
-  const handleExport = (lang: string, mode: "original" | "translated") => {
+  const handleExport = (lang: string, mode: SubtitleLanguage, format: SubtitleFormat) => {
     const langData = grouped[lang] || [];
-    const srt = generateSRT(langData, mode);
+    const content = generateSubtitle(langData, mode, format);
     const langName = getLanguageName(lang);
     const modeLabel = mode === "original" ? "원본" : "번역";
-    downloadFile(srt, `${sessionName}_${langName}_${modeLabel}.srt`);
+    downloadFile(content, `${sessionName}_${langName}_${modeLabel}.${format}`);
   };
 
-  const previewSrt = previewLang ? generateSRT(grouped[previewLang] || [], previewMode) : "";
+  const previewContent = previewLang
+    ? generateSubtitle(grouped[previewLang] || [], previewMode, previewFormat)
+    : "";
 
   return (
     <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
@@ -498,7 +524,7 @@ function ExportSection({
         <h3 className="text-sm font-semibold text-white">내보내기</h3>
       </div>
       <p className="text-xs text-gray-500 mb-4">
-        해석 내용을 SRT 자막 파일로 내보내세요
+        해석 내용을 SRT 또는 VTT 자막 파일로 내보내세요
       </p>
 
       <div className="space-y-3">
@@ -507,7 +533,7 @@ function ExportSection({
             key={lang}
             className="rounded-lg border border-gray-800 bg-gray-800/50 transition-colors hover:border-gray-700"
           >
-            <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center justify-between px-4 py-3 flex-wrap gap-2">
               <div>
                 <p className="text-sm text-white">
                   {getLanguageName(sourceLang)} → {getLanguageName(lang)}
@@ -516,35 +542,49 @@ function ExportSection({
                   {grouped[lang].length}개 항목
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => {
                     setPreviewLang(previewLang === lang ? null : lang);
                     setPreviewMode("translated");
+                    setPreviewFormat("srt");
                   }}
                   className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-800"
                 >
                   미리보기
                 </button>
                 <button
-                  onClick={() => handleExport(lang, "original")}
+                  onClick={() => handleExport(lang, "original", "srt")}
                   className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-800"
                 >
                   원본 SRT
                 </button>
                 <button
-                  onClick={() => handleExport(lang, "translated")}
+                  onClick={() => handleExport(lang, "translated", "srt")}
                   className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-indigo-500"
                 >
                   번역 SRT
                 </button>
+                <button
+                  onClick={() => handleExport(lang, "original", "vtt")}
+                  className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-800"
+                >
+                  원본 VTT
+                </button>
+                <button
+                  onClick={() => handleExport(lang, "translated", "vtt")}
+                  className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-800"
+                >
+                  번역 VTT
+                </button>
               </div>
             </div>
 
-            {/* SRT 미리보기 */}
+            {/* 자막 미리보기 */}
             {previewLang === lang && (
               <div className="border-t border-gray-700">
-                <div className="flex items-center gap-2 px-4 pt-3 pb-1">
+                <div className="flex items-center gap-2 px-4 pt-3 pb-1 flex-wrap">
+                  {/* 언어 토글 */}
                   <button
                     onClick={() => setPreviewMode("original")}
                     className={`text-xs px-2 py-0.5 rounded transition-colors ${
@@ -565,9 +605,31 @@ function ExportSection({
                   >
                     번역
                   </button>
+                  <span className="text-gray-700 text-xs">|</span>
+                  {/* 형식 토글 */}
+                  <button
+                    onClick={() => setPreviewFormat("srt")}
+                    className={`text-xs px-2 py-0.5 rounded transition-colors ${
+                      previewFormat === "srt"
+                        ? "bg-gray-700 text-white"
+                        : "text-gray-500 hover:text-gray-300"
+                    }`}
+                  >
+                    SRT
+                  </button>
+                  <button
+                    onClick={() => setPreviewFormat("vtt")}
+                    className={`text-xs px-2 py-0.5 rounded transition-colors ${
+                      previewFormat === "vtt"
+                        ? "bg-gray-700 text-white"
+                        : "text-gray-500 hover:text-gray-300"
+                    }`}
+                  >
+                    VTT
+                  </button>
                 </div>
                 <pre className="px-4 pb-3 text-xs text-gray-400 font-mono leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap">
-                  {previewSrt.slice(0, 600)}{previewSrt.length > 600 ? "\n..." : ""}
+                  {previewContent.slice(0, 600)}{previewContent.length > 600 ? "\n..." : ""}
                 </pre>
               </div>
             )}
@@ -849,7 +911,7 @@ export default function SessionDetailPage() {
           </div>
         </div>
         <button
-          onClick={() => router.push("/projects")}
+          onClick={() => router.push(`/projects/${project.id}/sessions`)}
           className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-800"
         >
           ← 뒤로
@@ -859,7 +921,7 @@ export default function SessionDetailPage() {
       {/* 세션 정보 카드 */}
       <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
         <h3 className="text-sm font-semibold text-white mb-4">세션 정보</h3>
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <div>
             <p className="text-xs text-gray-500 mb-1.5">상태</p>
             <StatusBadge status={session.status} />
@@ -873,9 +935,19 @@ export default function SessionDetailPage() {
             </p>
           </div>
           <div>
+            <p className="text-xs text-gray-500 mb-1">재생 시간</p>
+            <p className="text-sm text-white">
+              {session.audioDurationMs
+                ? formatDuration(session.audioDurationMs)
+                : session.endedAt
+                  ? formatDuration(new Date(session.endedAt).getTime() - new Date(session.startedAt).getTime())
+                  : "—"}
+            </p>
+          </div>
+          <div>
             <p className="text-xs text-gray-500 mb-1">종료 시각</p>
             <p className="text-sm text-white">
-              {session.endedAt ? formatDateLocal(session.endedAt) : "—"}
+              {session.endedAt ? formatDateLocal(session.endedAt) : "진행 중"}
             </p>
           </div>
         </div>

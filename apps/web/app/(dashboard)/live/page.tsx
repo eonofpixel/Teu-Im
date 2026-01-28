@@ -217,6 +217,9 @@ export default function LivePage() {
   const sequenceRef = useRef(1);
   const interpretationsPanelRef = useRef<HTMLDivElement>(null);
 
+  // ─── 세션 생성 로딩 ─────────────────────────────────────
+  const [creatingSession, setCreatingSession] = useState(false);
+
   // ─── 세션 저장 ──────────────────────────────────────────
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -399,12 +402,15 @@ export default function LivePage() {
     sequenceRef.current += 1;
   }, [selectedProject]);
 
-  // ─── 录音 시작 ──────────────────────────────────────────
+  // ─── 녹음 시작 ──────────────────────────────────────────
   const startRecording = useCallback(async () => {
     if (!selectedProject || !streamRef.current) return;
 
     // 세션 생성
+    setCreatingSession(true);
+    setSaveError(null);
     const sessionId = await createSession();
+    setCreatingSession(false);
     if (!sessionId) {
       setSaveError("세션을 생성할 수 없습니다. 잠시 후 다시 시도해주세요.");
       return;
@@ -447,7 +453,7 @@ export default function LivePage() {
     }, 3000);
   }, [selectedProject, createSession, mockInterpretation]);
 
-  // ─── 录音 중지 ──────────────────────────────────────────
+  // ─── 녹음 중지 ──────────────────────────────────────────
   const stopRecording = useCallback(() => {
     // 모의 통역 인터벌 중지
     if (mockIntervalRef.current) {
@@ -547,6 +553,7 @@ export default function LivePage() {
     selectedProject &&
     micStatus === "granted" &&
     !isRecording &&
+    !creatingSession &&
     sessionStatus !== "active";
 
   // ─── 로딩 스케leton ──────────────────────────────────
@@ -623,8 +630,12 @@ export default function LivePage() {
               disabled={!canStart}
               className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <span className="w-2.5 h-2.5 rounded-full bg-white" />
-              녹음 시작
+              {creatingSession ? (
+                <span className="w-2.5 h-2.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              ) : (
+                <span className="w-2.5 h-2.5 rounded-full bg-white" />
+              )}
+              {creatingSession ? "세션 생성 중..." : "녹음 시작"}
             </button>
           ) : (
             <button
@@ -643,29 +654,33 @@ export default function LivePage() {
               disabled={!canSave}
               className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V2m-3-2h6"
-                />
-              </svg>
-              세션 저장
+              {saving ? (
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V2m-3-2h6"
+                  />
+                </svg>
+              )}
+              {saving ? "저장 중..." : "세션 저장"}
             </button>
           )}
 
-          {/* 录音 중 표시 */}
+          {/* 녹음 중 표시 */}
           {isRecording && (
             <div className="flex items-center gap-2 ml-auto">
               <div className="w-2 h-2 rounded-full bg-red-500 animate-ping opacity-75" />
               <span className="text-xs text-red-400 font-medium">
-                录音 중
+                녹음 중
               </span>
             </div>
           )}

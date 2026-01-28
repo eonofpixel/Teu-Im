@@ -9,7 +9,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="max-w-6xl">
-      {/* 백크리눠 정보 경로 */}
+      {/* 백크리눠 정보 경로 (breadcrumb) */}
       <div className="flex items-center gap-2 mb-6">
         <Link
           href="/projects"
@@ -28,7 +28,7 @@ export default function AnalyticsPage() {
         <span className="text-xs text-gray-400">분석</span>
       </div>
 
-      {/* 대시보드 */}
+      {/* 대시보드 (로딩/에러/빈 상태 모두 내부 처리) */}
       <AnalyticsDashboard projectId={projectId} />
     </div>
   );
