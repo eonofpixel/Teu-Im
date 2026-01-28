@@ -3,6 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createBrowserClient } from "@/lib/supabase/browser";
 import type { Project } from "@teu-im/shared";
+import {
+  startSoniox,
+  stopSoniox,
+  isSonioxActive,
+  type InterpretationResult,
+} from "@/lib/soniox";
 
 // ─── 유틸: 언어 코드 → 표시명 ──────────────────────────────
 
@@ -35,28 +41,28 @@ interface LiveInterpretation {
   createdAt: string;
 }
 
-type MicStatus = "idle" | "requesting" | "granted" | "denied";
 type RecordingStatus = "stopped" | "recording";
 
-// ─── 마이크 상태 배지 ─────────────────────────────────────
+// ─── 연결 상태 배지 ─────────────────────────────────────
 
-function MicStatusBadge({ status }: { status: MicStatus }) {
-  const styles: Record<string, string> = {
-    idle: "bg-gray-800 text-gray-400",
-    requesting: "bg-amber-900/50 text-amber-400",
-    granted: "bg-emerald-900/50 text-emerald-400",
-    denied: "bg-red-900/50 text-red-400",
-  };
-  const labels: Record<string, string> = {
-    idle: "마이크 준비",
-    requesting: "권한 요청 중",
-    granted: "마이크 준비 완료",
-    denied: "마이크 권한 거부",
-  };
-
+function ConnectionStatusBadge({ connected, recording }: { connected: boolean; recording: boolean }) {
+  if (recording && connected) {
+    return (
+      <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-900/50 text-emerald-400">
+        실시간 통역 중
+      </span>
+    );
+  }
+  if (recording && !connected) {
+    return (
+      <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-900/50 text-amber-400">
+        연결 중...
+      </span>
+    );
+  }
   return (
-    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${styles[status]}`}>
-      {labels[status]}
+    <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-gray-800 text-gray-400">
+      대기 중
     </span>
   );
 }
@@ -199,13 +205,11 @@ export default function LivePage() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sessionStatus, setSessionStatus] = useState<"none" | "active">("none");
 
-  // ─── 마이크 및 录음 상태 ───────────────────────────────
-  const [micStatus, setMicStatus] = useState<MicStatus>("idle");
+  // ─── 녹음 및 Soniox 상태 ───────────────────────────────
   const [recordingStatus, setRecordingStatus] =
     useState<RecordingStatus>("stopped");
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const mockIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [sonioxConnected, setSonioxConnected] = useState(false);
+  const [sonioxError, setSonioxError] = useState<string | null>(null);
 
   // ─── 실시간 원문 / 번역 ─────────────────────────────────
   const [currentOriginalText, setCurrentOriginalText] = useState("");
@@ -282,29 +286,10 @@ export default function LivePage() {
       sequenceRef.current = 1;
       setSaveError(null);
       setSaveSuccess(false);
+      setSonioxError(null);
     },
     [recordingStatus]
   );
-
-  // ─── 마이크 권한 요청 ──────────────────────────────────
-  const requestMicPermission = useCallback(async () => {
-    setMicStatus("requesting");
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 16000,
-        },
-      });
-
-      streamRef.current = stream;
-      setMicStatus("granted");
-    } catch {
-      setMicStatus("denied");
-    }
-  }, []);
 
   // ─── 세션 생성 (API호출) ────────────────────────────────
   const createSession = useCallback(async (): Promise<string | null> => {
@@ -342,73 +327,51 @@ export default function LivePage() {
     setActiveSessionId(null);
   }, [activeSessionId]);
 
-  // ─── 모의 실시간 통역 (Placeholder) ─────────────────────
-  // Soniox 실제 연동은 별도 구현. 여기서는 모의 원문/번역 텍스트를
-  // 주기적으로 생성하여 실시간 UI 동작을 보여줍니다.
+  // ─── Soniox 결과 핸들러 ─────────────────────────────────
 
-  const mockInterpretation = useCallback(() => {
-    const sourceLang = selectedProject?.sourceLang ?? "ko";
-    const targetLangs = selectedProject?.targetLangs?.length
-      ? selectedProject.targetLangs
-      : [selectedProject?.targetLang ?? "en"];
+  const handlePartialResult = useCallback((result: InterpretationResult) => {
+    setCurrentOriginalText(result.originalText);
+    setCurrentTranslatedText(result.translatedText);
+  }, []);
 
-    const mockOriginals = [
-      "안녕하세요, 오늘의 발표를 시작하겠습니다.",
-      "이 프로젝트의 주요 목표는 실시간 통역 기능을 구현하는 것입니다.",
-      "우리는 웹과 모바일 플랫폼을 지원합니다.",
-      "다음 단계로는 Soniox API와의 실제 연동을 진행할 예정입니다.",
-      "질문이 있으시면 언제든지 말씀해 주세요.",
-    ];
-
-    const mockTranslations: Record<string, string[]> = {
-      en: [
-        "Hello, let me begin today's presentation.",
-        "The main goal of this project is to implement real-time interpretation functionality.",
-        "We support both web and mobile platforms.",
-        "The next step will be to integrate with the actual Soniox API.",
-        "Please feel free to ask any questions at any time.",
-      ],
-      ja: [
-        "こんにちは、本日のプレゼンテーションを開始いたします。",
-        "このプロジェクトの主な目標は、リアルタイム翻訳機能を実装することです。",
-        "ウェブとモバイルプラットフォームをサポートしています。",
-        "次のステップでは、実際のSoniox APIとの統合を進めます。",
-        "いつでもご質問ください。",
-      ],
-    };
-
-    const targetLang = targetLangs[0];
-    const translations =
-      mockTranslations[targetLang] ?? mockTranslations["en"];
-    const idx = (sequenceRef.current - 1) % mockOriginals.length;
-
-    const original = mockOriginals[idx];
-    const translated = translations[idx];
-
-    setCurrentOriginalText(original);
-    setCurrentTranslatedText(translated);
+  const handleFinalResult = useCallback((result: InterpretationResult) => {
+    setCurrentOriginalText(result.originalText);
+    setCurrentTranslatedText(result.translatedText);
 
     const newInterp: LiveInterpretation = {
-      id: `mock-${sequenceRef.current}-${Date.now()}`,
-      originalText: original,
-      translatedText: translated,
-      targetLanguage: targetLang,
+      id: `soniox-${result.sequence}-${Date.now()}`,
+      originalText: result.originalText,
+      translatedText: result.translatedText,
+      targetLanguage: result.targetLanguage,
       isFinal: true,
-      sequence: sequenceRef.current,
+      sequence: result.sequence,
       createdAt: new Date().toISOString(),
     };
 
     setInterpretations((prev) => [...prev, newInterp]);
-    sequenceRef.current += 1;
-  }, [selectedProject]);
+    sequenceRef.current = result.sequence;
+  }, []);
 
-  // ─── 녹음 시작 ──────────────────────────────────────────
+  const handleSonioxError = useCallback((error: Error) => {
+    console.error("Soniox error:", error);
+    setSonioxError(error.message);
+  }, []);
+
+  const handleConnectionChange = useCallback((connected: boolean) => {
+    setSonioxConnected(connected);
+    if (!connected && recordingStatus === "recording") {
+      setRecordingStatus("stopped");
+    }
+  }, [recordingStatus]);
+
+  // ─── 녹음 시작 (Soniox 연동) ───────────────────────────────
   const startRecording = useCallback(async () => {
-    if (!selectedProject || !streamRef.current) return;
+    if (!selectedProject) return;
 
     // 세션 생성
     setCreatingSession(true);
     setSaveError(null);
+    setSonioxError(null);
     const sessionId = await createSession();
     setCreatingSession(false);
     if (!sessionId) {
@@ -425,47 +388,51 @@ export default function LivePage() {
     setInterpretations([]);
     sequenceRef.current = 1;
 
-    // MediaRecorder 설정
-    const supportedMimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-      ? "audio/webm;codecs=opus"
-      : MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : "";
+    // Soniox 스트리밍 시작
+    const targetLangs = selectedProject.targetLangs?.length
+      ? selectedProject.targetLangs
+      : [selectedProject.targetLang];
+    const targetLang = targetLangs[0];
 
-    const mediaRecorder = new MediaRecorder(streamRef.current, {
-      ...(supportedMimeType ? { mimeType: supportedMimeType } : {}),
-    });
-
-    mediaRecorder.ondataavailable = () => {
-      // 실제 Soniox 연동 시 여기서 오디오 청크를 전송합니다
-    };
-
-    mediaRecorder.start(1000); // 1초 간격 청크
-    mediaRecorderRef.current = mediaRecorder;
-    setRecordingStatus("recording");
-
-    // 첫 번째 모의 통역 즉시 실행
-    mockInterpretation();
-
-    // 3초 간격으로 모의 통역 실행
-    mockIntervalRef.current = setInterval(() => {
-      mockInterpretation();
-    }, 3000);
-  }, [selectedProject, createSession, mockInterpretation]);
-
-  // ─── 녹음 중지 ──────────────────────────────────────────
-  const stopRecording = useCallback(() => {
-    // 모의 통역 인터벌 중지
-    if (mockIntervalRef.current) {
-      clearInterval(mockIntervalRef.current);
-      mockIntervalRef.current = null;
+    try {
+      await startSoniox({
+        projectId: selectedProject.id,
+        sessionId,
+        sourceLanguage: selectedProject.sourceLang,
+        targetLanguage: targetLang,
+        onPartialResult: handlePartialResult,
+        onFinalResult: handleFinalResult,
+        onError: handleSonioxError,
+        onConnectionChange: handleConnectionChange,
+      });
+      setRecordingStatus("recording");
+    } catch (error) {
+      console.error("Soniox 시작 실패:", error);
+      setSonioxError(
+        error instanceof Error
+          ? error.message
+          : "실시간 통역을 시작할 수 없습니다"
+      );
+      // 세션 정리
+      await endSession();
     }
+  }, [
+    selectedProject,
+    createSession,
+    endSession,
+    handlePartialResult,
+    handleFinalResult,
+    handleSonioxError,
+    handleConnectionChange,
+  ]);
 
-    // MediaRecorder 중지
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
+  // ─── 녹음 중지 (Soniox 중지) ───────────────────────────────
+  const stopRecording = useCallback(async () => {
+    try {
+      await stopSoniox();
+    } catch (error) {
+      console.error("Soniox 중지 오류:", error);
     }
-    mediaRecorderRef.current = null;
     setRecordingStatus("stopped");
   }, []);
 
@@ -518,17 +485,8 @@ export default function LivePage() {
   // ─── 컴포넌트 마운트 해제 시 정리 ─────────────────────
   useEffect(() => {
     return () => {
-      if (mockIntervalRef.current) {
-        clearInterval(mockIntervalRef.current);
-      }
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-      }
-      if (
-        mediaRecorderRef.current &&
-        mediaRecorderRef.current.state !== "inactive"
-      ) {
-        mediaRecorderRef.current.stop();
+      if (isSonioxActive()) {
+        stopSoniox();
       }
     };
   }, []);
@@ -551,7 +509,6 @@ export default function LivePage() {
     !saveSuccess;
   const canStart =
     selectedProject &&
-    micStatus === "granted" &&
     !isRecording &&
     !creatingSession &&
     sessionStatus !== "active";
@@ -585,11 +542,11 @@ export default function LivePage() {
         </p>
       </div>
 
-      {/* 프로젝트 선택 & 마이크 상태 카드 */}
+      {/* 프로젝트 선택 & 연결 상태 카드 */}
       <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-white">세션 설정</h2>
-          <MicStatusBadge status={micStatus} />
+          <ConnectionStatusBadge connected={sonioxConnected} recording={isRecording} />
         </div>
 
         <ProjectSelector
@@ -599,28 +556,22 @@ export default function LivePage() {
           disabled={isRecording}
         />
 
-        {/* 마이크 권한 요청 버튼 */}
-        {(micStatus === "idle" || micStatus === "denied") && (
-          <button
-            onClick={requestMicPermission}
-            className="w-full rounded-lg border border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 hover:text-white"
-          >
-            <span className="mr-1.5">🎤</span>
-            {micStatus === "denied"
-              ? "마이크 권한 다시 요청"
-              : "마이크 권한 요청"}
-          </button>
+        {/* Soniox 오류 표시 */}
+        {sonioxError && (
+          <p className="text-sm text-red-400 bg-red-900/20 rounded-lg px-3 py-2">
+            {sonioxError}
+          </p>
         )}
 
-        {/* 권한 요청 중 표시 */}
-        {micStatus === "requesting" && (
-          <p className="text-xs text-amber-400 text-center animate-pulse">
-            마이크 권한을 요청 중입니다...
+        {/* 사용 안내 */}
+        {!isRecording && selectedProject && (
+          <p className="text-xs text-gray-500">
+            녹음을 시작하면 마이크 권한을 요청합니다. Soniox API 키가 설정에서 등록되어 있어야 합니다.
           </p>
         )}
       </div>
 
-      {/* 录음 제어 버튼 행 */}
+      {/* 녹음 제어 버튼 행 */}
       <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
         <div className="flex items-center gap-3 flex-wrap">
           {/* 시작/중지 토글 버튼 */}
