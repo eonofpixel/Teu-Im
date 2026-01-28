@@ -6,6 +6,8 @@ import type { Project } from "@teu-im/shared";
 import {
   startSoniox,
   stopSoniox,
+  pauseSoniox,
+  resumeSoniox,
   isSonioxActive,
   type InterpretationResult,
 } from "@/lib/soniox";
@@ -41,11 +43,18 @@ interface LiveInterpretation {
   createdAt: string;
 }
 
-type RecordingStatus = "stopped" | "recording";
+type RecordingStatus = "stopped" | "recording" | "paused";
 
 // ─── 연결 상태 배지 ─────────────────────────────────────
 
-function ConnectionStatusBadge({ connected, recording }: { connected: boolean; recording: boolean }) {
+function ConnectionStatusBadge({ connected, recording, paused }: { connected: boolean; recording: boolean; paused: boolean }) {
+  if (paused) {
+    return (
+      <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-900/50 text-amber-400">
+        일시정지
+      </span>
+    );
+  }
   if (recording && connected) {
     return (
       <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-900/50 text-emerald-400">
@@ -203,7 +212,7 @@ export default function LivePage() {
 
   // ─── 세션 상태 ──────────────────────────────────────────
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [sessionStatus, setSessionStatus] = useState<"none" | "active">("none");
+  const [sessionStatus, setSessionStatus] = useState<"none" | "active" | "paused">("none");
 
   // ─── 녹음 및 Soniox 상태 ───────────────────────────────
   const [recordingStatus, setRecordingStatus] =
@@ -275,7 +284,7 @@ export default function LivePage() {
   // ─── 프로젝트 변경 시 상태 초기화 ──────────────────────
   const handleProjectChange = useCallback(
     (project: Project | null) => {
-      if (recordingStatus !== "stopped") return;
+      if (recordingStatus === "recording" || recordingStatus === "paused") return;
 
       setSelectedProject(project);
       setActiveSessionId(null);
@@ -359,8 +368,9 @@ export default function LivePage() {
 
   const handleConnectionChange = useCallback((connected: boolean) => {
     setSonioxConnected(connected);
-    if (!connected && recordingStatus === "recording") {
+    if (!connected && (recordingStatus === "recording" || recordingStatus === "paused")) {
       setRecordingStatus("stopped");
+      setSessionStatus("none");
     }
   }, [recordingStatus]);
 
@@ -436,6 +446,42 @@ export default function LivePage() {
     setRecordingStatus("stopped");
   }, []);
 
+  // ─── 녹음 일시정지 ─────────────────────────────────────
+  const pauseRecording = useCallback(async () => {
+    if (recordingStatus !== "recording") return;
+
+    try {
+      await pauseSoniox();
+      setRecordingStatus("paused");
+      setSessionStatus("paused");
+    } catch (error) {
+      console.error("Soniox 일시정지 오류:", error);
+      setSonioxError(
+        error instanceof Error
+          ? error.message
+          : "일시정지에 실패했습니다"
+      );
+    }
+  }, [recordingStatus]);
+
+  // ─── 녹음 재개 ──────────────────────────────────────────
+  const resumeRecording = useCallback(async () => {
+    if (recordingStatus !== "paused") return;
+
+    try {
+      await resumeSoniox();
+      setRecordingStatus("recording");
+      setSessionStatus("active");
+    } catch (error) {
+      console.error("Soniox 재개 오류:", error);
+      setSonioxError(
+        error instanceof Error
+          ? error.message
+          : "재개에 실패했습니다"
+      );
+    }
+  }, [recordingStatus]);
+
   // ─── 세션 저장 ──────────────────────────────────────────
   const saveSession = useCallback(async () => {
     if (!activeSessionId || !selectedProject || interpretations.length === 0)
@@ -501,17 +547,60 @@ export default function LivePage() {
 
   // ─── 버튼 활성화 조건 ─────────────────────────────────
   const isRecording = recordingStatus === "recording";
+  const isPaused = recordingStatus === "paused";
+  const isActiveOrPaused = isRecording || isPaused;
   const canSave =
-    !isRecording &&
+    !isActiveOrPaused &&
     activeSessionId &&
     interpretations.length > 0 &&
     !saving &&
     !saveSuccess;
   const canStart =
     selectedProject &&
-    !isRecording &&
+    !isActiveOrPaused &&
     !creatingSession &&
     sessionStatus !== "active";
+
+  // ─── 키보드 단축키 ──────────────────────────────────────
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 입력 필드에 포커스 중이면 단축키 비활성화
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      if (e.key === " " || e.code === "Space") {
+        e.preventDefault();
+        if (recordingStatus === "recording") {
+          pauseRecording();
+        } else if (recordingStatus === "paused") {
+          resumeRecording();
+        } else if (recordingStatus === "stopped" && canStart) {
+          startRecording();
+        }
+      }
+
+      if (e.key === "Escape" || e.code === "Escape") {
+        e.preventDefault();
+        if (recordingStatus === "recording" || recordingStatus === "paused") {
+          stopRecording().then(() => {
+            endSession();
+          });
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [recordingStatus, canStart, startRecording, pauseRecording, resumeRecording, stopRecording, endSession]);
 
   // ─── 로딩 스케leton ──────────────────────────────────
   if (projectsLoading) {
@@ -546,14 +635,14 @@ export default function LivePage() {
       <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-white">세션 설정</h2>
-          <ConnectionStatusBadge connected={sonioxConnected} recording={isRecording} />
+          <ConnectionStatusBadge connected={sonioxConnected} recording={isRecording} paused={isPaused} />
         </div>
 
         <ProjectSelector
           projects={projects}
           selectedProject={selectedProject}
           onChange={handleProjectChange}
-          disabled={isRecording}
+          disabled={isActiveOrPaused}
         />
 
         {/* Soniox 오류 표시 */}
@@ -564,7 +653,7 @@ export default function LivePage() {
         )}
 
         {/* 사용 안내 */}
-        {!isRecording && selectedProject && (
+        {!isActiveOrPaused && selectedProject && (
           <p className="text-xs text-gray-500">
             녹음을 시작하면 마이크 권한을 요청합니다. Soniox API 키가 설정에서 등록되어 있어야 합니다.
           </p>
@@ -574,8 +663,8 @@ export default function LivePage() {
       {/* 녹음 제어 버튼 행 */}
       <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
         <div className="flex items-center gap-3 flex-wrap">
-          {/* 시작/중지 토글 버튼 */}
-          {!isRecording ? (
+          {/* 시작 버튼 (stopped 상태) */}
+          {recordingStatus === "stopped" && (
             <button
               onClick={startRecording}
               disabled={!canStart}
@@ -588,7 +677,52 @@ export default function LivePage() {
               )}
               {creatingSession ? "세션 생성 중..." : "녹음 시작"}
             </button>
-          ) : (
+          )}
+
+          {/* 재개 버튼 (paused 상태) */}
+          {recordingStatus === "paused" && (
+            <button
+              onClick={resumeRecording}
+              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM6.8 6.2a.8.8 0 011.13-.13l4.2 3.8a.8.8 0 010 1.26l-4.2 3.8A.8.8 0 016.8 13.8V6.2z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              재개
+            </button>
+          )}
+
+          {/* 일시정지 버튼 (recording 상태) */}
+          {recordingStatus === "recording" && (
+            <button
+              onClick={pauseRecording}
+              className="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-amber-500"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 011 1v4a1 1 0 11-2 0V8a1 1 0 011-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              일시정지
+            </button>
+          )}
+
+          {/* 중지 버튼 (recording 또는 paused 상태) */}
+          {(recordingStatus === "recording" || recordingStatus === "paused") && (
             <button
               onClick={stopRecording}
               className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-500"
@@ -599,7 +733,7 @@ export default function LivePage() {
           )}
 
           {/* 세션 저장 버튼 */}
-          {activeSessionId && !isRecording && (
+          {activeSessionId && !isActiveOrPaused && (
             <button
               onClick={saveSession}
               disabled={!canSave}
@@ -626,7 +760,7 @@ export default function LivePage() {
             </button>
           )}
 
-          {/* 녹음 중 표시 */}
+          {/* 녹음 중 / 일시정지 표시 */}
           {isRecording && (
             <div className="flex items-center gap-2 ml-auto">
               <div className="w-2 h-2 rounded-full bg-red-500 animate-ping opacity-75" />
@@ -635,7 +769,20 @@ export default function LivePage() {
               </span>
             </div>
           )}
+          {isPaused && (
+            <div className="flex items-center gap-2 ml-auto">
+              <div className="w-2 h-2 rounded-full bg-amber-500" />
+              <span className="text-xs text-amber-400 font-medium">
+                일시정지
+              </span>
+            </div>
+          )}
         </div>
+
+        {/* 키보드 단축키 힌트 */}
+        <p className="text-xs text-gray-600 mt-3">
+          Space: 시작/중지, Esc: 종료
+        </p>
 
         {/* 에러 메시지 */}
         {saveError && (
