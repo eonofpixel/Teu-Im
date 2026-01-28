@@ -139,6 +139,9 @@ importers:
       '@supabase/ssr':
         specifier: ^0.5.0
         version: 0.5.2(@supabase/supabase-js@2.93.2)
+      '@supabase/supabase-js':
+        specifier: ^2.93.2
+        version: 2.93.2
       '@teu-im/shared':
         specifier: workspace:*
         version: link:../../packages/shared

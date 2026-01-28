@@ -18,35 +18,40 @@ export default function SignupPage() {
     setError(null);
     setLoading(true);
 
-    const supabase = createBrowserClient();
+    try {
+      // Use server-side API for auto-confirmed signup
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, name }),
+      });
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { name },
-      },
-    });
+      const data = await response.json();
 
-    if (signUpError) {
-      setError(signUpError.message);
+      if (!response.ok) {
+        setError(data.error || "회원가입에 실패했습니다");
+        setLoading(false);
+        return;
+      }
+
+      // Now sign in the user
+      const supabase = createBrowserClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        setError("회원가입은 완료되었으나 로그인에 실패했습니다. 로그인 페이지에서 다시 시도해주세요.");
+        setLoading(false);
+        return;
+      }
+
+      router.push("/projects");
+    } catch {
+      setError("서버 오류가 발생했습니다");
       setLoading(false);
-      return;
     }
-
-    if (data.user) {
-      // users 테이블에 프로필 저장
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
-        .from("users")
-        .insert({
-          id: data.user.id,
-          email: data.user.email!,
-          name,
-        });
-    }
-
-    router.push("/projects");
   };
 
   return (
