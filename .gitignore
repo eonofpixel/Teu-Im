@@ -31,3 +31,4 @@ apps/desktop/src-tauri/dist
 .DS_Store
 Thumbs.db
 .vercel
+.env*.local
