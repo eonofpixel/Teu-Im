@@ -15,6 +15,10 @@ import {
   resumeMultiLangSoniox,
 } from "@/lib/soniox";
 import { createSession, endSession } from "@teu-im/supabase";
+import QRCode from "qrcode";
+
+// Base URL for audience access
+const AUDIENCE_BASE_URL = "https://teu-im.vercel.app/audience";
 
 // Language code to display name mapping
 const LANGUAGE_NAMES: Record<string, { name: string; nativeName: string }> = {
@@ -52,6 +56,125 @@ function getLanguageAccent(code: string) {
   return LANGUAGE_ACCENTS[code] || { border: "border-gray-800", text: "text-emerald-300", label: "text-gray-400" };
 }
 
+// ─── Share Modal for QR Code and Link ────────────────────────────────────────
+
+interface ShareModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  code: string;
+  password: string;
+  projectName: string;
+}
+
+function ShareModal({ isOpen, onClose, code, password, projectName }: ShareModalProps) {
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const shareUrl = `${AUDIENCE_BASE_URL}/${code}?p=${password}`;
+
+  useEffect(() => {
+    if (isOpen && code) {
+      QRCode.toDataURL(shareUrl, {
+        width: 280,
+        margin: 2,
+        color: {
+          dark: '#ffffff',
+          light: '#00000000',
+        },
+      }).then(setQrDataUrl).catch(console.error);
+    }
+  }, [isOpen, code, shareUrl]);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="bg-gray-900 rounded-3xl border border-gray-800 p-8 max-w-md w-full mx-4 shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-white">청중 초대</h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-800 rounded-xl transition-colors"
+          >
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Project info */}
+        <div className="text-center mb-6">
+          <p className="text-lg font-semibold text-white mb-1">{projectName}</p>
+          <p className="text-sm text-gray-500">아래 QR 코드를 스캔하거나 링크를 공유하세요</p>
+        </div>
+
+        {/* QR Code */}
+        <div className="flex justify-center mb-6">
+          <div className="bg-white p-4 rounded-2xl">
+            {qrDataUrl ? (
+              <img src={qrDataUrl} alt="QR Code" className="w-64 h-64" />
+            ) : (
+              <div className="w-64 h-64 flex items-center justify-center">
+                <div className="w-8 h-8 border-2 border-gray-300 border-t-indigo-500 rounded-full animate-spin" />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Access info */}
+        <div className="bg-gray-800/50 rounded-2xl p-4 mb-4">
+          <div className="grid grid-cols-2 gap-4 text-center">
+            <div>
+              <p className="text-xs text-gray-500 mb-1">행사 코드</p>
+              <p className="text-2xl font-mono font-bold text-white tracking-wider">{code}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 mb-1">비밀번호</p>
+              <p className="text-2xl font-mono font-bold text-white tracking-wider">{password}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Link section */}
+        <div className="mb-6">
+          <p className="text-xs text-gray-500 mb-2">공유 링크</p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              readOnly
+              value={shareUrl}
+              className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-sm text-gray-300 font-mono truncate"
+            />
+            <button
+              onClick={handleCopy}
+              className={`px-4 py-3 rounded-xl font-medium transition-all ${
+                copied
+                  ? "bg-emerald-600 text-white"
+                  : "bg-indigo-600 hover:bg-indigo-500 text-white"
+              }`}
+            >
+              {copied ? "복사됨!" : "복사"}
+            </button>
+          </div>
+        </div>
+
+        {/* Instructions */}
+        <div className="text-center text-xs text-gray-600">
+          <p>청중은 QR 코드를 스캔하면 바로 실시간 통역을 볼 수 있습니다.</p>
+          <p className="mt-1">별도 앱 설치나 회원가입이 필요 없습니다.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Interpreter() {
   const currentProject = useAppStore((state) => state.currentProject)!;
   const setCurrentProject = useAppStore((state) => state.setCurrentProject);
@@ -70,6 +193,7 @@ export function Interpreter() {
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -352,6 +476,17 @@ export function Interpreter() {
               {sourceLanguageDisplay} → {targetLangs.map((l) => getLanguageName(l)).join(", ")}
             </p>
           </div>
+
+          {/* Share with audience button */}
+          <button
+            onClick={() => setShowShareModal(true)}
+            className="flex items-center gap-2 px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium transition-all min-h-[44px]"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+            <span>청중 초대</span>
+          </button>
         </div>
 
         {/* Right: Status badge + Timer */}
@@ -538,6 +673,17 @@ export function Interpreter() {
           </div>
         </div>
       )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════════
+          SHARE MODAL — QR code and link for audience
+          ═══════════════════════════════════════════════════════════════════════════ */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        code={currentProject?.code || ""}
+        password={currentProject?.password || ""}
+        projectName={currentProject?.name || ""}
+      />
     </div>
   );
 }
