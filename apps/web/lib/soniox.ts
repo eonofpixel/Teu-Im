@@ -78,10 +78,20 @@ let isMultiLangActive = false;
 // ============================================================================
 
 async function fetchTempApiKey(projectId: string): Promise<string> {
+  // Supabase 세션에서 access token 가져오기
+  const { createBrowserClient } = await import('@/lib/supabase/browser');
+  const supabase = createBrowserClient();
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session?.access_token) {
+    throw new Error('인증이 필요합니다');
+  }
+
   const response = await fetch('/api/soniox/temp-key', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
     },
     credentials: 'include',
     body: JSON.stringify({ projectId }),
