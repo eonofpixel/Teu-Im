@@ -50,10 +50,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const existingSessionData = existingSession as { id: string } | null;
 
     if (existingSessionData) {
-      return apiError('이미 활성 세션이 있습니다', {
-        status: 409,
-        details: { sessionId: existingSessionData.id }
-      });
+      // Return existing session ID in the response body (not details which is stripped in production)
+      return NextResponse.json(
+        {
+          error: '이미 활성 세션이 있습니다',
+          sessionId: existingSessionData.id
+        },
+        {
+          status: 409,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          }
+        }
+      );
     }
 
     // 새 세션 생성
