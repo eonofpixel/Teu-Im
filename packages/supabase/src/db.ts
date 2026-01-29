@@ -132,10 +132,12 @@ export async function saveInterpretation(
     targetLanguage?: string;
     startTimeMs?: number;
     endTimeMs?: number;
+    client?: any; // Optional custom Supabase client
   }
 ): Promise<void> {
+  const db = options?.client ?? supabase;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any).from("interpretations").insert({
+  const { error } = await (db as any).from("interpretations").insert({
     session_id: sessionId,
     original_text: originalText,
     translated_text: translatedText,

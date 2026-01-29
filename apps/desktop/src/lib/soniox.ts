@@ -11,6 +11,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import { supabase } from './supabase';
 import { audioRecorder, uploadSessionAudio, updateSessionAudio } from './audioRecorder';
+import { saveInterpretation as saveInterpretationToDb } from '@teu-im/supabase';
 
 // ============================================================================
 // 타입 정의
@@ -65,6 +66,12 @@ interface LanguageConnection {
   sequence: number;
   configSent: boolean;
   connected: boolean;
+  // Debounce state for saving interpretations
+  pendingOriginal: string;
+  pendingTranslated: string;
+  pendingStartTimeMs?: number;
+  pendingEndTimeMs?: number;
+  saveTimer: ReturnType<typeof setTimeout> | null;
 }
 
 // ============================================================================
@@ -117,72 +124,6 @@ async function fetchTempApiKey(projectId: string): Promise<string> {
   return data.tempApiKey;
 }
 
-// 통역 결과 저장 (단일 언어 - 기존 호환)
-async function saveInterpretation(
-  sessionId: string,
-  originalText: string,
-  translatedText: string,
-  isFinal: boolean,
-  seq: number
-): Promise<void> {
-  if (!originalText && !translatedText) return;
-
-  const { error } = await supabase
-    .from('interpretations')
-    .upsert(
-      {
-        session_id: sessionId,
-        original_text: originalText,
-        translated_text: translatedText,
-        is_final: isFinal,
-        sequence: seq,
-      } as any,
-      {
-        onConflict: 'session_id,sequence',
-      }
-    );
-
-  if (error) {
-    console.error('통역 결과 저장 실패:', error);
-  }
-}
-
-// 통역 결과 저장 (다중 언어 - target_language 포함)
-async function saveMultiLangInterpretation(
-  sessionId: string,
-  originalText: string,
-  translatedText: string,
-  targetLanguage: string,
-  isFinal: boolean,
-  seq: number,
-  startTimeMs?: number,
-  endTimeMs?: number
-): Promise<void> {
-  if (!originalText && !translatedText) return;
-
-  const { error } = await supabase
-    .from('interpretations')
-    .upsert(
-      {
-        session_id: sessionId,
-        original_text: originalText,
-        translated_text: translatedText,
-        target_language: targetLanguage,
-        is_final: isFinal,
-        sequence: seq,
-        start_time_ms: startTimeMs,
-        end_time_ms: endTimeMs,
-      } as any,
-      {
-        // 다중 언어는 session_id + sequence + target_language가 유니크
-        onConflict: 'session_id,sequence,target_language',
-      }
-    );
-
-  if (error) {
-    console.error(`통역 결과 저장 실패 (${targetLanguage}):`, error);
-  }
-}
 
 // Soniox 스트리밍 시작
 export async function startSoniox(config: SonioxConfig): Promise<void> {
@@ -291,7 +232,17 @@ export async function startSoniox(config: SonioxConfig): Promise<void> {
             sequence,
           };
           config.onFinalResult(result);
-          await saveInterpretation(config.sessionId, original, translated, true, sequence);
+          await saveInterpretationToDb(
+            config.sessionId,
+            original,
+            translated,
+            true,
+            sequence,
+            {
+              targetLanguage: config.targetLanguage,
+              client: supabase
+            }
+          );
         } else if (original || translated) {
           const result: InterpretationResult = {
             originalText: original,
@@ -547,6 +498,11 @@ async function createLanguageConnection(
       sequence: 0,
       configSent: false,
       connected: false,
+      pendingOriginal: '',
+      pendingTranslated: '',
+      pendingStartTimeMs: undefined,
+      pendingEndTimeMs: undefined,
+      saveTimer: null,
     };
 
     ws.onopen = () => {
@@ -648,6 +604,72 @@ async function startMultiLangAudioCapture(config: MultiLangConfig): Promise<void
   await invoke('start_audio_capture', { deviceId });
 }
 
+// Debounce delay for saving interpretations (ms)
+const SAVE_DEBOUNCE_MS = 1500;
+
+// Sentence-ending punctuation patterns
+const SENTENCE_END_PATTERN = /[.!?。！？]\s*$/;
+
+/**
+ * Save pending interpretation to database
+ */
+async function savePendingInterpretation(
+  connection: LanguageConnection,
+  config: MultiLangConfig
+): Promise<void> {
+  if (!connection.pendingOriginal && !connection.pendingTranslated) {
+    return;
+  }
+
+  connection.sequence++;
+  const result: InterpretationResult = {
+    originalText: connection.pendingOriginal,
+    translatedText: connection.pendingTranslated,
+    targetLanguage: connection.targetLanguage,
+    isFinal: true,
+    sequence: connection.sequence,
+    startTimeMs: connection.pendingStartTimeMs,
+    endTimeMs: connection.pendingEndTimeMs,
+  };
+
+  // Notify UI
+  config.onFinalResult(result);
+
+  // Save to database
+  try {
+    console.log(`[Soniox] Saving interpretation to DB (debounced):`, {
+      sessionId: config.sessionId,
+      targetLanguage: connection.targetLanguage,
+      sequence: connection.sequence,
+      originalLength: connection.pendingOriginal.length,
+      translatedLength: connection.pendingTranslated.length,
+    });
+    await saveInterpretationToDb(
+      config.sessionId,
+      connection.pendingOriginal,
+      connection.pendingTranslated,
+      true,
+      connection.sequence,
+      {
+        targetLanguage: connection.targetLanguage,
+        startTimeMs: connection.pendingStartTimeMs,
+        endTimeMs: connection.pendingEndTimeMs,
+        client: supabase
+      }
+    );
+    console.log(`[Soniox] Successfully saved interpretation seq=${connection.sequence}`);
+  } catch (saveError) {
+    console.error(`[Soniox] FAILED to save interpretation:`, saveError);
+    config.onError(new Error(`통역 저장 실패: ${(saveError as Error).message}`), connection.targetLanguage);
+  }
+
+  // Clear pending state
+  connection.pendingOriginal = '';
+  connection.pendingTranslated = '';
+  connection.pendingStartTimeMs = undefined;
+  connection.pendingEndTimeMs = undefined;
+}
+
 /**
  * 다중 언어 메시지 처리
  */
@@ -687,31 +709,48 @@ async function handleMultiLangMessage(
       }
     }
 
-    const isFinal = data.finished === true;
+    // Skip empty messages
+    if (!original && !translated) {
+      return;
+    }
 
-    if (isFinal) {
-      connection.sequence++;
-      const result: InterpretationResult = {
-        originalText: original,
-        translatedText: translated,
-        targetLanguage: connection.targetLanguage,
-        isFinal: true,
-        sequence: connection.sequence,
-        startTimeMs,
-        endTimeMs,
-      };
-      config.onFinalResult(result);
-      await saveMultiLangInterpretation(
-        config.sessionId,
-        original,
-        translated,
-        connection.targetLanguage,
-        true,
-        connection.sequence,
-        startTimeMs,
-        endTimeMs
-      );
-    } else if (original || translated) {
+    // Update pending state with new text
+    connection.pendingOriginal = original;
+    connection.pendingTranslated = translated;
+    if (startTimeMs !== undefined && connection.pendingStartTimeMs === undefined) {
+      connection.pendingStartTimeMs = startTimeMs;
+    }
+    if (endTimeMs !== undefined) {
+      connection.pendingEndTimeMs = endTimeMs;
+    }
+
+    // Clear existing timer
+    if (connection.saveTimer) {
+      clearTimeout(connection.saveTimer);
+      connection.saveTimer = null;
+    }
+
+    // Check for immediate save conditions:
+    // 1. Soniox says finished
+    // 2. Sentence-ending punctuation detected
+    const isFinal = data.finished === true;
+    const hasSentenceEnd = SENTENCE_END_PATTERN.test(original) || SENTENCE_END_PATTERN.test(translated);
+
+    if (isFinal || hasSentenceEnd) {
+      console.log(`[Soniox ${connection.targetLanguage}] Immediate save:`, {
+        isFinal,
+        hasSentenceEnd,
+        originalPreview: original.substring(0, 50),
+      });
+      await savePendingInterpretation(connection, config);
+    } else {
+      // Set debounce timer - save after pause in speech
+      connection.saveTimer = setTimeout(async () => {
+        console.log(`[Soniox ${connection.targetLanguage}] Debounce save triggered`);
+        await savePendingInterpretation(connection, config);
+      }, SAVE_DEBOUNCE_MS);
+
+      // Send partial result to UI
       const result: InterpretationResult = {
         originalText: original,
         translatedText: translated,
@@ -745,8 +784,21 @@ async function cleanupMultiLang(): Promise<void> {
     multiLangAudioUnlisten = null;
   }
 
-  // 모든 WebSocket 연결 정리
+  // 모든 WebSocket 연결 정리 (타이머 포함)
   for (const [, connection] of multiLangConnections) {
+    // Clear any pending save timer
+    if (connection.saveTimer) {
+      clearTimeout(connection.saveTimer);
+      connection.saveTimer = null;
+    }
+    // Save any pending interpretation before closing
+    if (multiLangConfig && (connection.pendingOriginal || connection.pendingTranslated)) {
+      try {
+        await savePendingInterpretation(connection, multiLangConfig);
+      } catch (e) {
+        console.error(`Failed to save pending interpretation for ${connection.targetLanguage}:`, e);
+      }
+    }
     try {
       if (connection.ws.readyState === WebSocket.OPEN) {
         connection.ws.close();
