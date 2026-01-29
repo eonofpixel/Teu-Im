@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient as createClient } from '@/lib/supabase/server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { apiError, apiSuccess, ERRORS } from '@/lib/api-response';
 
 interface RouteParams {
@@ -20,14 +21,44 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
 
+// Helper to get authenticated user from either cookies or Bearer token
+async function getAuthenticatedUser(request: NextRequest) {
+  // First try Bearer token from Authorization header (for desktop app)
+  const authHeader = request.headers.get('Authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.slice(7);
+    const supabase = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      }
+    );
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (!error && user) {
+      return { user, supabase };
+    }
+  }
+
+  // Fall back to cookie-based auth (for web app)
+  const supabase = await createClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (!error && user) {
+    return { user, supabase };
+  }
+
+  return { user: null, supabase: null };
+}
+
 // PATCH - 세션 상태 업데이트
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { sessionId } = await params;
-    const supabase = await createClient();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    const { user, supabase } = await getAuthenticatedUser(request);
+    if (!user || !supabase) {
       return apiError(ERRORS.UNAUTHORIZED, { status: 401 });
     }
 
