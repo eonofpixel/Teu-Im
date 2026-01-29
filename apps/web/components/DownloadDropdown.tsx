@@ -68,7 +68,7 @@ export function DownloadDropdown() {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 sm:left-auto sm:right-0 mt-2 w-full sm:w-64 rounded-xl border border-gray-700 bg-gray-800 shadow-xl shadow-black/30 overflow-hidden z-50">
+        <div className="absolute top-full left-0 right-0 sm:left-auto sm:right-0 mt-2 w-full sm:w-64 rounded-xl border border-gray-700 bg-gray-900 shadow-2xl shadow-black/50 overflow-hidden z-50 backdrop-blur-none isolate">
           {loading ? (
             <div className="px-4 py-6 text-center">
               <div className="w-5 h-5 border-2 border-gray-600 border-t-indigo-500 rounded-full animate-spin mx-auto" />
