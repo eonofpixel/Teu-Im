@@ -349,14 +349,15 @@ function ReleaseNotesSection({ notes }: { notes: string }) {
 
 function MacOSTroubleshootingSection() {
   const [expanded, setExpanded] = useState(true);
-  const [copiedCommand, setCopiedCommand] = useState(false);
+  const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
 
-  const command = "xattr -cr ~/Downloads/Teu-Im_*.dmg";
+  const dmgCommand = "xattr -cr ~/Downloads/Teu-Im_*.dmg";
+  const appCommand = "xattr -cr /Applications/Teu-Im.app";
 
-  const handleCopyCommand = async () => {
-    await navigator.clipboard.writeText(command);
-    setCopiedCommand(true);
-    setTimeout(() => setCopiedCommand(false), 1500);
+  const handleCopyCommand = async (cmd: string) => {
+    await navigator.clipboard.writeText(cmd);
+    setCopiedCommand(cmd);
+    setTimeout(() => setCopiedCommand(null), 1500);
   };
 
   return (
@@ -398,32 +399,69 @@ function MacOSTroubleshootingSection() {
               <h4 className="text-sm font-semibold text-amber-100">방법 1: 터미널 명령어 (권장)</h4>
             </div>
             <p className="text-xs text-amber-200/70 mb-3 ml-7">
-              터미널을 열고 다음 명령어를 실행하세요:
+              터미널을 열고 다음 명령어를 순서대로 실행하세요:
             </p>
-            <div className="ml-7 relative">
-              <div className="bg-gray-900 rounded-lg p-3 pr-12 border border-gray-800">
-                <code className="text-xs text-amber-300 font-mono break-all">
-                  {command}
-                </code>
+
+            {/* DMG 파일 명령어 */}
+            <div className="ml-7 mb-3">
+              <p className="text-xs text-amber-200/50 mb-1.5">① DMG 파일 격리 해제:</p>
+              <div className="relative">
+                <div className="bg-gray-900 rounded-lg p-3 pr-12 border border-gray-800">
+                  <code className="text-xs text-amber-300 font-mono break-all">
+                    {dmgCommand}
+                  </code>
+                </div>
+                <button
+                  onClick={() => handleCopyCommand(dmgCommand)}
+                  className="absolute right-2 top-2 p-1.5 rounded text-gray-500 hover:text-amber-300 hover:bg-gray-800 transition-colors"
+                  title="복사"
+                >
+                  {copiedCommand === dmgCommand ? (
+                    <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-3 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                </button>
               </div>
-              <button
-                onClick={handleCopyCommand}
-                className="absolute right-2 top-2 p-1.5 rounded text-gray-500 hover:text-amber-300 hover:bg-gray-800 transition-colors"
-                title="복사"
-              >
-                {copiedCommand ? (
-                  <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : (
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-3 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                )}
-              </button>
             </div>
-            <p className="text-xs text-amber-200/70 mt-2 ml-7">
-              그런 다음 DMG 파일을 열고 Applications 폴더로 드래그하세요.
+
+            {/* 앱 폴더로 드래그 안내 */}
+            <p className="text-xs text-amber-200/70 ml-7 mb-3">
+              → DMG 파일을 열고 Applications 폴더로 드래그하세요.
+            </p>
+
+            {/* 앱 파일 명령어 */}
+            <div className="ml-7 mb-2">
+              <p className="text-xs text-amber-200/50 mb-1.5">② 설치된 앱 격리 해제:</p>
+              <div className="relative">
+                <div className="bg-gray-900 rounded-lg p-3 pr-12 border border-gray-800">
+                  <code className="text-xs text-amber-300 font-mono break-all">
+                    {appCommand}
+                  </code>
+                </div>
+                <button
+                  onClick={() => handleCopyCommand(appCommand)}
+                  className="absolute right-2 top-2 p-1.5 rounded text-gray-500 hover:text-amber-300 hover:bg-gray-800 transition-colors"
+                  title="복사"
+                >
+                  {copiedCommand === appCommand ? (
+                    <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-3 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+            <p className="text-xs text-amber-200/70 ml-7">
+              → 이제 앱을 정상적으로 실행할 수 있습니다.
             </p>
           </div>
 
