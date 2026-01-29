@@ -804,10 +804,13 @@ function LiveView({ projectData }: { projectData: JoinResponse }) {
             },
             (payload) => {
               const newStatus = (payload.new as { status: string }).status;
+              console.log("[Audience] Session status changed:", newStatus);
               setSessionStatus(newStatus);
             }
           )
-          .subscribe()
+          .subscribe((status) => {
+            console.log("[Audience] Session subscription status:", status);
+          })
       : null;
 
     // Subscribe to new sessions for this project (when a new session starts)
