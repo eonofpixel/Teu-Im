@@ -398,6 +398,18 @@ function ProjectCard({
         </div>
       </div>
 
+      {/* 라이브 시작 버튼 */}
+      <Link
+        href={`/live?projectId=${project.id}`}
+        onClick={(e) => e.stopPropagation()}
+        className="mt-4 flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-medium transition-all duration-200 shadow-lg shadow-indigo-600/20 relative z-10"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+        </svg>
+        라이브 시작
+      </Link>
+
       {/* 통계 행 */}
       <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-800">
         <div className="flex items-center gap-1.5 text-xs text-gray-500">

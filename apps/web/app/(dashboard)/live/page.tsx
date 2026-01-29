@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { createBrowserClient } from "@/lib/supabase/browser";
 import type { Project } from "@teu-im/shared";
 import {
@@ -210,6 +212,10 @@ function InterpretationItem({
 // ─── 메인 페이지 ───────────────────────────────────────────
 
 export default function LivePage() {
+  // ─── URL params ─────────────────────────────────────────
+  const searchParams = useSearchParams();
+  const preselectedProjectId = searchParams.get('projectId');
+
   // ─── 프로젝트 목록 상태 ─────────────────────────────────
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -286,10 +292,18 @@ export default function LivePage() {
         createdAt: row.created_at,
       }));
       setProjects(mapped);
+
+      // Auto-select project if provided in URL
+      if (preselectedProjectId) {
+        const preselected = mapped.find(p => p.id === preselectedProjectId);
+        if (preselected) {
+          setSelectedProject(preselected);
+        }
+      }
     }
 
     setProjectsLoading(false);
-  }, []);
+  }, [preselectedProjectId]);
 
   useEffect(() => {
     fetchProjects();
@@ -659,12 +673,34 @@ export default function LivePage() {
           <ConnectionStatusBadge connected={sonioxConnected} recording={isRecording} paused={isPaused} />
         </div>
 
-        <ProjectSelector
-          projects={projects}
-          selectedProject={selectedProject}
-          onChange={handleProjectChange}
-          disabled={isActiveOrPaused}
-        />
+        {preselectedProjectId && selectedProject ? (
+          // Show fixed project header with back button
+          <div className="flex items-center gap-3 p-4 rounded-lg border border-gray-800 bg-gray-800/50">
+            <Link
+              href="/projects"
+              className="p-2 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+              aria-label="프로젝트 목록으로 돌아가기"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </Link>
+            <div className="flex-1">
+              <h3 className="text-base font-semibold text-white">{selectedProject.name}</h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {getLanguageName(selectedProject.sourceLang)} → {(selectedProject.targetLangs?.length ? selectedProject.targetLangs : [selectedProject.targetLang]).map((l) => getLanguageName(l)).join(", ")}
+              </p>
+            </div>
+          </div>
+        ) : (
+          // Show project selector dropdown
+          <ProjectSelector
+            projects={projects}
+            selectedProject={selectedProject}
+            onChange={handleProjectChange}
+            disabled={isActiveOrPaused}
+          />
+        )}
 
         {/* Soniox 오류 표시 */}
         {sonioxError && (

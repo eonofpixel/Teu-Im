@@ -74,6 +74,14 @@ function StarIcon() {
   );
 }
 
+function AlertTriangleIcon() {
+  return (
+    <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5-2.217 3.374-1.948 3.374C-7.784 19.5 1.51 19.5 12 19.5c10.49 0 19.784 0 20.251-.75.268 0-.618-1.874-1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+    </svg>
+  );
+}
+
 // ─── SHA256 체크섬 배지 ─────────────────────────────────────
 
 function ChecksumBadge({ checksum }: { checksum: string }) {
@@ -329,6 +337,127 @@ function ReleaseNotesSection({ notes }: { notes: string }) {
         <div className="px-5 pb-5 border-t border-gray-800 pt-4">
           <div className="prose prose-sm prose-invert prose-gray max-w-none text-xs text-gray-400 leading-relaxed [&_h1]:text-sm [&_h1]:font-bold [&_h1]:text-white [&_h1]:mb-2 [&_h2]:text-xs [&_h2]:font-semibold [&_h2]:text-gray-300 [&_h2]:mt-3 [&_h2]:mb-1 [&_h3]:text-xs [&_h3]:font-semibold [&_h3]:text-gray-400 [&_h3]:mt-2 [&_h3]:mb-1 [&_ul]:my-1 [&_ul]:ml-4 [&_ul]:list-disc [&_li]:my-0.5 [&_ol]:my-1 [&_ol]:ml-4 [&_ol]:list-decimal [&_code]:bg-gray-800 [&_code]:text-indigo-300 [&_code]:rounded [&_code]:px-1 [&_code]:py-0.5 [&_pre]:bg-gray-800 [&_pre]:rounded-lg [&_pre]:p-3 [&_pre]:overflow-x-auto [&_pre_code]:bg-transparent [&_pre_code]:px-0 [&_pre_code]:py-0 [&_a]:text-indigo-400 [&_a]:underline [&_a:hover]:text-indigo-300 [&_strong]:text-gray-300 [&_p]:mb-2 [&_hr]:border-gray-800 [&_blockquote]:border-l-2 [&_blockquote]:border-gray-700 [&_blockquote]:pl-3 [&_blockquote]:text-gray-500 [&_blockquote]:italic">
             <ReactMarkdown>{notes}</ReactMarkdown>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── macOS 문제 해결 섹션 ─────────────────────────────────
+
+function MacOSTroubleshootingSection() {
+  const [expanded, setExpanded] = useState(false);
+  const [copiedCommand, setCopiedCommand] = useState(false);
+
+  const command = "xattr -cr ~/Downloads/Teu-Im_*.dmg";
+
+  const handleCopyCommand = async () => {
+    await navigator.clipboard.writeText(command);
+    setCopiedCommand(true);
+    setTimeout(() => setCopiedCommand(false), 1500);
+  };
+
+  return (
+    <div className="rounded-xl border border-amber-600/30 bg-amber-600/5 overflow-hidden">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between px-5 py-4 text-left transition-colors hover:bg-amber-600/10"
+      >
+        <div className="flex items-center gap-3">
+          <AlertTriangleIcon />
+          <h2 className="text-sm font-semibold text-amber-100">macOS 설치 문제 해결</h2>
+        </div>
+        <svg
+          className={`w-4 h-4 text-amber-500 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {expanded && (
+        <div className="px-5 pb-5 border-t border-amber-600/20 pt-4">
+          <h3 className="text-sm font-semibold text-amber-100 mb-2">
+            macOS에서 &quot;손상됨&quot; 오류가 발생하는 경우
+          </h3>
+          <p className="text-xs text-amber-200/70 mb-4 leading-relaxed">
+            이것은 인터넷에서 다운로드한 서명되지 않은 앱에 대한 macOS의 정상적인 보안 기능입니다.
+          </p>
+
+          {/* Solution 1: Terminal Command */}
+          <div className="mb-5">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-600/20 border border-amber-600/30 flex-shrink-0">
+                <span className="text-xs font-bold text-amber-300">1</span>
+              </div>
+              <h4 className="text-sm font-semibold text-amber-100">방법 1: 터미널 명령어 (권장)</h4>
+            </div>
+            <p className="text-xs text-amber-200/70 mb-3 ml-7">
+              터미널을 열고 다음 명령어를 실행하세요:
+            </p>
+            <div className="ml-7 relative">
+              <div className="bg-gray-900 rounded-lg p-3 pr-12 border border-gray-800">
+                <code className="text-xs text-amber-300 font-mono break-all">
+                  {command}
+                </code>
+              </div>
+              <button
+                onClick={handleCopyCommand}
+                className="absolute right-2 top-2 p-1.5 rounded text-gray-500 hover:text-amber-300 hover:bg-gray-800 transition-colors"
+                title="복사"
+              >
+                {copiedCommand ? (
+                  <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-3 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+            <p className="text-xs text-amber-200/70 mt-2 ml-7">
+              그런 다음 DMG 파일을 열고 Applications 폴더로 드래그하세요.
+            </p>
+          </div>
+
+          {/* Solution 2: Right-click Method */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-600/20 border border-amber-600/30 flex-shrink-0">
+                <span className="text-xs font-bold text-amber-300">2</span>
+              </div>
+              <h4 className="text-sm font-semibold text-amber-100">방법 2: 우클릭으로 열기</h4>
+            </div>
+            <div className="ml-7 space-y-1.5">
+              <div className="flex items-start gap-2">
+                <span className="text-xs text-amber-600 mt-0.5">•</span>
+                <p className="text-xs text-amber-200/70">DMG 파일을 더블클릭해서 마운트</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-xs text-amber-600 mt-0.5">•</span>
+                <p className="text-xs text-amber-200/70">Applications 폴더로 앱을 드래그</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-xs text-amber-600 mt-0.5">•</span>
+                <p className="text-xs text-amber-200/70">
+                  Applications 폴더에서 Teu-Im 앱을 <span className="font-semibold text-amber-200">우클릭</span> (또는 Control+클릭)
+                </p>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-xs text-amber-600 mt-0.5">•</span>
+                <p className="text-xs text-amber-200/70">메뉴에서 &quot;열기&quot; 선택</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-xs text-amber-600 mt-0.5">•</span>
+                <p className="text-xs text-amber-200/70">경고 창에서 다시 &quot;열기&quot; 클릭</p>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -632,6 +761,11 @@ export default function DownloadPage() {
             />
           ))}
         </div>
+      </div>
+
+      {/* macOS 문제 해결 */}
+      <div className="mb-6">
+        <MacOSTroubleshootingSection />
       </div>
 
       {/* 전체 릴리스 목록 링크 */}
