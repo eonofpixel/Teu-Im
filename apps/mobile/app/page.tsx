@@ -58,7 +58,7 @@ export default function JoinPage() {
         return;
       }
 
-      if (project.password !== password) {
+      if (project.password !== password.toUpperCase()) {
         triggerError("비밀번호가 일치하지 않습니다.");
         return;
       }

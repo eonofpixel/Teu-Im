@@ -370,8 +370,8 @@ function ProjectCard({
           </p>
         </div>
 
-        {/* 액션 메뉴 - 호버 시 표시 */}
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+        {/* 액션 메뉴 - 호버 시 표시, Link 위에 표시되도록 z-index 설정 */}
+        <div className="relative z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           <ActionMenu
             projectId={project.id}
             onEdit={() => setEditOpen(true)}
@@ -401,10 +401,10 @@ function ProjectCard({
         </div>
       </div>
 
-      {/* 클릭 가능한 오버레이 - 세션 목록으로 이동 */}
+      {/* 클릭 가능한 오버레이 - 세션 목록으로 이동 (z-0으로 ActionMenu 아래에 배치) */}
       <Link
         href={`/projects/${project.id}/sessions`}
-        className="absolute inset-0 rounded-xl"
+        className="absolute inset-0 rounded-xl z-0"
         aria-label={`${project.name} 세션 보기`}
       />
 
