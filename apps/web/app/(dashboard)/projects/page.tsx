@@ -202,7 +202,7 @@ function DeleteConfirmModal({
       <div className="relative rounded-xl border border-gray-800 bg-gray-900 p-6 max-w-sm w-full mx-4 shadow-2xl">
         <h4 className="text-sm font-semibold text-white mb-2">프로젝트 삭제</h4>
         <p className="text-sm text-gray-400 mb-1">
-          <span className="text-white font-medium">"{projectName}"</span>
+          <span className="text-white font-medium">&ldquo;{projectName}&rdquo;</span>
         </p>
         <p className="text-sm text-gray-400 mb-5">
           프로젝트와 관련된 모든 세션 및 해석 내용이 영구적으로 삭제되겠습니다.
@@ -274,7 +274,6 @@ function EditModal({
     setError(null);
     try {
       const supabase = createBrowserClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: updateError } = await (supabase as any)
         .from("projects")
         .update({ name: name.trim() })
@@ -445,7 +444,6 @@ export default function ProjectsPage() {
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any)
       .from("projects")
       .select("*")
@@ -453,7 +451,6 @@ export default function ProjectsPage() {
       .order("created_at", { ascending: false });
 
     if (data) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mapped: Project[] = data.map((row: any) => ({
         id: row.id,
         userId: row.user_id,
@@ -472,7 +469,6 @@ export default function ProjectsPage() {
       // 각 프로젝트의 세션 수 조회
       const counts: Record<string, number> = {};
       for (const p of mapped) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: sessions } = await (supabase as any)
           .from("sessions")
           .select("id")
@@ -496,14 +492,12 @@ export default function ProjectsPage() {
     const supabase = createBrowserClient();
 
     // 세션 삭제
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any)
       .from("sessions")
       .delete()
       .eq("project_id", deleteTarget.id);
 
     // 프로젝트 삭제
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any)
       .from("projects")
       .delete()

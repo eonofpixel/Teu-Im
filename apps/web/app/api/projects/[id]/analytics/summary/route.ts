@@ -31,7 +31,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // 프로젝트 소유권 확인
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: project } = await (supabase as any)
       .from("projects")
       .select("id, name, source_lang, target_langs, created_at")
@@ -47,7 +46,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // 전체 세션 조회
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: sessionsData } = await (supabase as any)
       .from("sessions")
       .select("id, started_at, ended_at, audio_duration_ms")
@@ -77,7 +75,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     let languageBreakdown: Record<string, number> = {};
 
     if (sessionIds.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: interpsData } = await (supabase as any)
         .from("interpretations")
         .select("target_language, original_text, translated_text")

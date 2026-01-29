@@ -30,7 +30,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // 세션 조회 및 프로젝트 소유권 확인
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: session, error: sessionError } = await (supabase as any)
       .from('sessions')
       .select('id, project_id, status')
@@ -42,7 +41,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // 프로젝트 소유권 확인
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: project, error: projectError } = await (supabase as any)
       .from('projects')
       .select('id, user_id')
@@ -76,7 +74,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       updateData.ended_at = new Date().toISOString();
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: updatedSession, error: updateError } = await (supabase as any)
       .from('sessions')
       .update(updateData)

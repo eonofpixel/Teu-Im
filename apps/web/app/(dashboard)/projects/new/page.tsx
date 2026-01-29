@@ -45,7 +45,6 @@ export default function NewProjectPage() {
 
     const password = generateCode();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: insertError } = await (supabase as any).from("projects").insert({
       user_id: session.user.id,
       name,

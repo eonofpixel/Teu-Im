@@ -240,7 +240,6 @@ function ApiSection({
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateError } = await (supabase as any)
       .from("users")
       .update({ soniox_api_key: newApiKey })
@@ -269,7 +268,6 @@ function ApiSection({
 
     const session = await getSession();
     if (session) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from("users")
         .update({ soniox_api_key: null })
@@ -296,7 +294,6 @@ function ApiSection({
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any)
       .from("users")
       .select("soniox_api_key")
@@ -595,10 +592,8 @@ function AccountSection() {
 
     try {
       // 사용자 테이블에서 삭제 (CASCADE로 관련 데이터도 삭제)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase as any).auth.getSession();
       if (data?.session) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase as any)
           .from("users")
           .delete()
@@ -735,7 +730,6 @@ export default function SettingsPage() {
       if (session) {
         setUserEmail(session.user.email ?? "");
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: userData } = await (supabase as any)
           .from("users")
           .select("name, soniox_api_key")
@@ -763,7 +757,6 @@ export default function SettingsPage() {
     const session = data.session;
     if (!session) throw new Error("세션 만료");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("users")
       .update({ name })

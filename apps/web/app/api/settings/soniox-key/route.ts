@@ -11,7 +11,6 @@ export async function GET() {
       return NextResponse.json({ error: '인증이 필요합니다' }, { status: 401 });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: userData } = await (supabase as any)
       .from('users')
       .select('soniox_api_key')
@@ -61,7 +60,6 @@ export async function POST(request: NextRequest) {
     }
 
     // DB에 저장 (추후 암호화 추가 권장)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateError } = await (supabase as any)
       .from('users')
       .update({ soniox_api_key: apiKey })
@@ -88,7 +86,6 @@ export async function DELETE() {
       return NextResponse.json({ error: '인증이 필요합니다' }, { status: 401 });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateError } = await (supabase as any)
       .from('users')
       .update({ soniox_api_key: null })

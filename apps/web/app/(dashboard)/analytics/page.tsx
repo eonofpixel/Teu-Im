@@ -319,7 +319,6 @@ export default function AnalyticsPage() {
       }
 
       // 프로젝트 조회
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: projectsRaw } = await (supabase as any)
         .from("projects")
         .select("id, name, source_lang, target_lang, target_langs, created_at, status")
@@ -343,7 +342,6 @@ export default function AnalyticsPage() {
       const projectIds = projects.map((p) => p.id);
 
       // 세션 조회
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: sessionsRaw } = await (supabase as any)
         .from("sessions")
         .select("id, project_id, started_at, ended_at, audio_duration_ms, status")
@@ -357,7 +355,6 @@ export default function AnalyticsPage() {
       let interpretations: InterpretationRow[] = [];
 
       if (sessionIds.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: interpsRaw } = await (supabase as any)
           .from("interpretations")
           .select("id, session_id, target_language, original_text, translated_text, created_at")

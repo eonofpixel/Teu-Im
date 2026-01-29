@@ -43,7 +43,6 @@ export async function POST(request: NextRequest) {
 
     // ─── 프로젝트 조회 ───────────────────────────────────────────────────
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: project, error: projectError } = await (supabase as any)
       .from("projects")
       .select("id, name, password, source_lang, target_lang, status")
@@ -75,7 +74,6 @@ export async function POST(request: NextRequest) {
 
     // ─── 활성 세션 확인 ──────────────────────────────────────────────────
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: activeSession } = await (supabase as any)
       .from("sessions")
       .select("id")

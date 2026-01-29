@@ -79,7 +79,6 @@ function encodeCursor(sequence: number, id: string): string {
 // ─── 프로젝트 소유권 검증 ──────────────────────────────────
 
 async function verifyOwnership(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
   sessionId: string,
   userId: string
@@ -163,7 +162,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // 해석 조회 쿼리 구성
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase as any)
       .from("interpretations")
       .select("*", { count: "exact" })
@@ -238,7 +236,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         );
 
         // 시간 범위와 겹치는 청크 조회
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: chunksRaw, error: chunkError } = await (supabase as any)
           .from("audio_chunks")
           .select("*")

@@ -40,7 +40,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // 세션 존재 및 소유권 확인
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: session } = await (supabase as any)
       .from('sessions')
       .select('id, project_id')
@@ -51,7 +50,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: '세션을 찾을 수 없습니다' }, { status: 404 });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: project } = await (supabase as any)
       .from('projects')
       .select('id')
@@ -84,7 +82,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // audio_chunks 테이블에 삽입
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: chunk, error: insertError } = await (supabase as any)
       .from('audio_chunks')
       .insert({
@@ -128,7 +125,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // 세션 존재 및 소유권 확인
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: session } = await (supabase as any)
       .from('sessions')
       .select('id, project_id')
@@ -139,7 +135,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: '세션을 찾을 수 없습니다' }, { status: 404 });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: project } = await (supabase as any)
       .from('projects')
       .select('id')
@@ -157,7 +152,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const offset = parseInt(searchParams.get('offset') || '0', 10);
 
     // 청크 목록 조회 (chunk_index 순)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: chunks, error, count } = await (supabase as any)
       .from('audio_chunks')
       .select('*', { count: 'exact' })

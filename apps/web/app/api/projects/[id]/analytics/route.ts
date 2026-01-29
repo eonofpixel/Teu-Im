@@ -46,7 +46,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // 프로젝트 소유권 확인
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: project } = await (supabase as any)
       .from("projects")
       .select("id, source_lang, target_langs")
@@ -84,7 +83,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // analytics_daily에서 집계된 데이터 조회
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: analyticsData } = await (supabase as any)
       .from("analytics_daily")
       .select(
@@ -98,7 +96,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const rows: AnalyticsRow[] = analyticsData || [];
 
     // 세션에서 직접 집계 (analytics_daily가 비어있을 경우 실시간 집계)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: sessionsData } = await (supabase as any)
       .from("sessions")
       .select("id, started_at, ended_at, audio_duration_ms")
@@ -118,7 +115,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     let interps: InterpretationRow[] = [];
 
     if (sessionIds.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: interpsData } = await (supabase as any)
         .from("interpretations")
         .select("target_language, original_text, translated_text, created_at")

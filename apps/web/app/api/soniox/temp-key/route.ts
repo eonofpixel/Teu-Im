@@ -52,7 +52,6 @@ export async function POST(request: NextRequest) {
     const { projectId } = await request.json();
 
     // 4. 프로젝트 소유권 확인
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: project, error: projectError } = await (supabase as any)
       .from('projects')
       .select('id, user_id')
@@ -69,7 +68,6 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. 사용자의 Soniox API 키 조회
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: userData, error: userError } = await (supabase as any)
       .from('users')
       .select('soniox_api_key')

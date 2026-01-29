@@ -22,7 +22,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // 프로젝트 소유권 확인
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: project } = await (supabase as any)
       .from('projects')
       .select('id')
@@ -35,7 +34,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // 세션 존재 확인
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: session } = await (supabase as any)
       .from('sessions')
       .select('id')
@@ -48,7 +46,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // 해석 데이터 조회
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase as any)
       .from('interpretations')
       .select('sequence, start_time_ms, end_time_ms, original_text, translated_text, target_language')

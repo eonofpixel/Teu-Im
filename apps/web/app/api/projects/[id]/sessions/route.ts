@@ -17,7 +17,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // 프로젝트 소유권 확인
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: project, error: projectError } = await (supabase as any)
       .from('projects')
       .select('id, user_id, status')
@@ -30,7 +29,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // 기존 활성 세션 확인
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: existingSession } = await (supabase as any)
       .from('sessions')
       .select('id')
@@ -47,7 +45,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // 새 세션 생성
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: session, error: sessionError } = await (supabase as any)
       .from('sessions')
       .insert({
@@ -62,7 +59,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // 프로젝트 상태 업데이트
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any)
       .from('projects')
       .update({ status: 'active' })
@@ -87,7 +83,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // 프로젝트 소유권 확인
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: project } = await (supabase as any)
       .from('projects')
       .select('id')
@@ -99,7 +94,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: '프로젝트를 찾을 수 없습니다' }, { status: 404 });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: sessions, error } = await (supabase as any)
       .from('sessions')
       .select('*')

@@ -812,7 +812,6 @@ export default function SessionDetailPage() {
 
     await supabase.storage.from("session-audio").remove([session.audioFilePath]);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase.from("sessions") as any)
       .update({ audio_file_path: null, audio_duration_ms: null })
       .eq("id", session.id);

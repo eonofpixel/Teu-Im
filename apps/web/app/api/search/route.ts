@@ -121,7 +121,6 @@ export async function GET(request: NextRequest) {
 
     // If project_id provided, verify ownership
     if (projectId) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: project } = await (supabase as any)
         .from("projects")
         .select("id")
@@ -145,7 +144,6 @@ export async function GET(request: NextRequest) {
     if (projectId) {
       searchProjectIds = [projectId];
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: projects } = await (supabase as any)
         .from("projects")
         .select("id")
@@ -172,7 +170,6 @@ export async function GET(request: NextRequest) {
 
     for (const pid of searchProjectIds) {
       // Fetch count
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: countData } = await (supabase as any).rpc(
         "count_search_interpretations",
         { query: q, p_project_id: pid }
@@ -183,7 +180,6 @@ export async function GET(request: NextRequest) {
       const remaining = limit - allResults.length;
       if (remaining <= 0) continue;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: rows, error: searchError } = await (supabase as any).rpc(
         "search_interpretations",
         {

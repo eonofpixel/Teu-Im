@@ -15,7 +15,6 @@ export async function GET() {
       return apiError(ERRORS.UNAUTHORIZED, { status: 401 });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: projects, error } = await (supabase as any)
       .from('projects')
       .select('*')
@@ -59,7 +58,6 @@ export async function POST(request: NextRequest) {
     const maxAttempts = 10;
 
     while (attempts < maxAttempts) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: existing } = await (supabase as any)
         .from('projects')
         .select('id')
@@ -79,7 +77,6 @@ export async function POST(request: NextRequest) {
     // 참석자 비밀번호 생성 (4자리)
     const password = Math.random().toString(36).substring(2, 6).toUpperCase();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: project, error } = await (supabase as any)
       .from('projects')
       .insert({

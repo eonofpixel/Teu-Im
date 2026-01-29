@@ -266,7 +266,6 @@ export default function LivePage() {
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any)
       .from("projects")
       .select("*")
@@ -274,7 +273,6 @@ export default function LivePage() {
       .order("created_at", { ascending: false });
 
     if (data) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mapped: Project[] = data.map((row: any) => ({
         id: row.id,
         userId: row.user_id,
@@ -528,7 +526,6 @@ export default function LivePage() {
         sequence: item.sequence,
       }));
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: interpError } = await (supabase as any)
         .from("interpretations")
         .insert(interpsToSave);

@@ -53,7 +53,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // --- Session lookup and ownership verification ---
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: session } = await (supabase as any)
       .from("sessions")
       .select("id, project_id")
@@ -67,7 +66,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: project } = await (supabase as any)
       .from("projects")
       .select("id")
@@ -83,7 +81,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // --- Fetch interpretations ---
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase as any)
       .from("interpretations")
       .select(

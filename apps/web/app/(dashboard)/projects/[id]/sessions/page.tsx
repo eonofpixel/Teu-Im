@@ -139,7 +139,6 @@ export default function ProjectSessionsPage() {
     const supabase = createBrowserClient();
 
     // 프로젝트 정보 조회
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: projectData } = await (supabase as any)
       .from("projects")
       .select("*")
@@ -151,7 +150,6 @@ export default function ProjectSessionsPage() {
     }
 
     // 세션 목록 조회
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: sessionsData } = await (supabase as any)
       .from("sessions")
       .select("*")

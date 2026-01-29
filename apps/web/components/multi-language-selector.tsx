@@ -116,6 +116,7 @@ export function MultiLanguageSelector({
       {/* Trigger / selected chips area */}
       <div
         role="combobox"
+        aria-controls="language-listbox"
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         tabIndex={0}
@@ -186,7 +187,7 @@ export function MultiLanguageSelector({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute z-30 mt-1.5 w-full rounded-lg border border-gray-700 bg-gray-900 shadow-lg shadow-black/30 overflow-hidden">
+        <div id="language-listbox" className="absolute z-30 mt-1.5 w-full rounded-lg border border-gray-700 bg-gray-900 shadow-lg shadow-black/30 overflow-hidden">
           {/* Search input */}
           <div className="p-2 border-b border-gray-800">
             <div className="relative">

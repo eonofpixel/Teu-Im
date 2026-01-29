@@ -16,7 +16,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: '인증이 필요합니다' }, { status: 401 });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: project, error } = await (supabase as any)
       .from('projects')
       .select('*')
@@ -58,7 +57,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: project, error } = await (supabase as any)
       .from('projects')
       .update(filteredUpdates)
@@ -89,7 +87,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: '인증이 필요합니다' }, { status: 401 });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from('projects')
       .delete()
