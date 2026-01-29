@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient as createClient } from "@/lib/supabase/server";
+import { apiError, apiSuccess, ERRORS } from "@/lib/api-response";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       error: authError,
     } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: "인증이 필요합니다" }, { status: 401 });
+      return apiError(ERRORS.UNAUTHORIZED, { status: 401 });
     }
 
     // 프로젝트 소유권 확인
@@ -54,10 +55,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (!project) {
-      return NextResponse.json(
-        { error: "프로젝트를 찾을 수 없습니다" },
-        { status: 404 }
-      );
+      return apiError(ERRORS.NOT_FOUND, { status: 404 });
     }
 
     // 쿼리 파라미터 파싱
@@ -76,10 +74,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // 유효성 검사
     if (!isValidDate(fromDate) || !isValidDate(toDate)) {
-      return NextResponse.json(
-        { error: "유효하지 않은 날짜 형식입니다 (YYYY-MM-DD)" },
-        { status: 400 }
-      );
+      return apiError("유효하지 않은 날짜 형식입니다 (YYYY-MM-DD)", { status: 400 });
     }
 
     // analytics_daily에서 집계된 데이터 조회
@@ -173,7 +168,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           },
         };
 
-    return NextResponse.json({
+    return apiSuccess({
       totals,
       language_breakdown: Object.entries(languageBreakdown)
         .sort(([, a], [, b]) => b - a)
@@ -188,7 +183,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     console.error("Analytics error:", error);
-    return NextResponse.json({ error: "서버 오류" }, { status: 500 });
+    return apiError(ERRORS.INTERNAL, { status: 500 });
   }
 }
 

@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { apiError, apiSuccess, ERRORS } from '@/lib/api-response';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
-
-function jsonResponse(data: object, status = 200) {
-  return NextResponse.json(data, { status, headers: corsHeaders });
-}
 
 // CORS preflight
 export async function OPTIONS() {
@@ -21,7 +18,7 @@ export async function POST(request: NextRequest) {
     // 1. Authorization 헤더에서 토큰 추출
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-      return jsonResponse({ error: '인증이 필요합니다' }, 401);
+      return apiError(ERRORS.UNAUTHORIZED, { status: 401 });
     }
 
     const accessToken = authHeader.slice(7);
@@ -46,7 +43,7 @@ export async function POST(request: NextRequest) {
     // 3. 사용자 인증 확인
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     if (authError || !user) {
-      return jsonResponse({ error: '인증이 필요합니다' }, 401);
+      return apiError(ERRORS.UNAUTHORIZED, { status: 401 });
     }
 
     const { projectId } = await request.json();
@@ -60,11 +57,11 @@ export async function POST(request: NextRequest) {
     const projectData = project as { id: string; user_id: string } | null;
 
     if (projectError || !projectData) {
-      return jsonResponse({ error: '프로젝트를 찾을 수 없습니다' }, 404);
+      return apiError(ERRORS.NOT_FOUND, { status: 404 });
     }
 
     if (projectData.user_id !== user.id) {
-      return jsonResponse({ error: '권한이 없습니다' }, 403);
+      return apiError(ERRORS.FORBIDDEN, { status: 403 });
     }
 
     // 5. 사용자의 Soniox API 키 조회
@@ -76,9 +73,9 @@ export async function POST(request: NextRequest) {
     const userDataTyped = userData as { soniox_api_key: string | null } | null;
 
     if (userError || !userDataTyped?.soniox_api_key) {
-      return jsonResponse(
-        { error: 'Soniox API 키가 설정되지 않았습니다. 설정에서 API 키를 등록해주세요.' },
-        400
+      return apiError(
+        'Soniox API 키가 설정되지 않았습니다. 설정에서 API 키를 등록해주세요.',
+        { status: 400 }
       );
     }
 
@@ -98,7 +95,7 @@ export async function POST(request: NextRequest) {
     if (!sonioxResponse.ok) {
       const errorData = await sonioxResponse.json().catch(() => ({}));
       console.error('Soniox API error:', sonioxResponse.status, errorData);
-      return jsonResponse({ error: `Soniox API 오류: ${errorData.message || sonioxResponse.status}` }, 502);
+      return apiError(`Soniox API 오류: ${errorData.message || sonioxResponse.status}`, { status: 502 });
     }
 
     const sonioxData = await sonioxResponse.json();
@@ -106,7 +103,7 @@ export async function POST(request: NextRequest) {
     const tempApiKey = sonioxData.api_key;
 
     // 7. 응답 반환
-    return jsonResponse({
+    return apiSuccess({
       tempApiKey,
       expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
       websocketUrl: 'wss://stt-rt.soniox.com/transcribe-websocket',
@@ -114,6 +111,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Temp key API error:', error);
-    return jsonResponse({ error: '서버 오류가 발생했습니다' }, 500);
+    return apiError(ERRORS.INTERNAL, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient as createClient } from "@/lib/supabase/server";
+import { apiError, ERRORS } from "@/lib/api-response";
 import {
   exportSubtitles,
   type SubtitleEntry,
@@ -27,17 +28,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const targetLanguage = searchParams.get("targetLanguage"); // optional: filter by specific target language
 
     if (!VALID_FORMATS.includes(format)) {
-      return NextResponse.json(
-        { error: `Invalid format. Supported: ${VALID_FORMATS.join(", ")}` },
+      return apiError(
+        `Invalid format. Supported: ${VALID_FORMATS.join(", ")}`,
         { status: 400 }
       );
     }
 
     if (!VALID_LANGUAGES.includes(language)) {
-      return NextResponse.json(
-        {
-          error: `Invalid language. Supported: ${VALID_LANGUAGES.join(", ")}`,
-        },
+      return apiError(
+        `Invalid language. Supported: ${VALID_LANGUAGES.join(", ")}`,
         { status: 400 }
       );
     }
@@ -49,7 +48,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       error: authError,
     } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: "인증이 필요합니다" }, { status: 401 });
+      return apiError(ERRORS.UNAUTHORIZED, { status: 401 });
     }
 
     // --- Session lookup and ownership verification ---
@@ -60,10 +59,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (!session) {
-      return NextResponse.json(
-        { error: "세션을 찾을 수 없습니다" },
-        { status: 404 }
-      );
+      return apiError("세션을 찾을 수 없습니다", { status: 404 });
     }
 
     const { data: project } = await (supabase as any)
@@ -74,10 +70,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (!project) {
-      return NextResponse.json(
-        { error: "프로젝트를 찾을 수 없습니다" },
-        { status: 404 }
-      );
+      return apiError(ERRORS.NOT_FOUND, { status: 404 });
     }
 
     // --- Fetch interpretations ---
@@ -135,6 +128,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     console.error("Export subtitle error:", error);
-    return NextResponse.json({ error: "서버 오류" }, { status: 500 });
+    return apiError(ERRORS.INTERNAL, { status: 500 });
   }
 }

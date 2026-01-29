@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient as createClient } from "@/lib/supabase/server";
+import { apiError, apiSuccess, ERRORS } from "@/lib/api-response";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       error: authError,
     } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: "인증이 필요합니다" }, { status: 401 });
+      return apiError(ERRORS.UNAUTHORIZED, { status: 401 });
     }
 
     // 프로젝트 소유권 확인
@@ -39,10 +40,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (!project) {
-      return NextResponse.json(
-        { error: "프로젝트를 찾을 수 없습니다" },
-        { status: 404 }
-      );
+      return apiError(ERRORS.NOT_FOUND, { status: 404 });
     }
 
     // 전체 세션 조회
@@ -99,7 +97,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       (s: { started_at: string }) => new Date(s.started_at) >= weekAgo
     );
 
-    return NextResponse.json({
+    return apiSuccess({
       project: {
         id: project.id,
         name: project.name,
@@ -126,7 +124,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     console.error("Analytics summary error:", error);
-    return NextResponse.json({ error: "서버 오류" }, { status: 500 });
+    return apiError(ERRORS.INTERNAL, { status: 500 });
   }
 }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient as createClient } from "@/lib/supabase/server";
+import { apiError, apiSuccess, ERRORS } from "@/lib/api-response";
 
 interface RouteParams {
   params: Promise<{ sessionId: string }>;
@@ -135,16 +136,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       error: authError,
     } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: "인증이 필요합니다" }, { status: 401 });
+      return apiError(ERRORS.UNAUTHORIZED, { status: 401 });
     }
 
     // 세션 존재 및 소유권 확인
     const ownershipResult = await verifyOwnership(supabase, sessionId, user.id);
     if ("error" in ownershipResult) {
-      return NextResponse.json(
-        { error: ownershipResult.error },
-        { status: ownershipResult.status }
-      );
+      return apiError(ownershipResult.error, { status: ownershipResult.status });
     }
     const { session } = ownershipResult;
 
@@ -157,7 +155,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     if (cursor) {
       cursorData = decodeCursor(cursor);
       if (!cursorData) {
-        return NextResponse.json({ error: "유효하지 않은 커서입니다" }, { status: 400 });
+        return apiError(ERRORS.VALIDATION, { status: 400 });
       }
     }
 
@@ -275,7 +273,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       audio_duration_ms: session.audio_duration_ms,
     };
 
-    return NextResponse.json({
+    return apiSuccess({
       interpretations: formattedInterpretations,
       audio_chunks: audioChunks,
       session: sessionMeta,
@@ -288,6 +286,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     console.error("Fetch session history error:", error);
-    return NextResponse.json({ error: "서버 오류" }, { status: 500 });
+    return apiError(ERRORS.INTERNAL, { status: 500 });
   }
 }

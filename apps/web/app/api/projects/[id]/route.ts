@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient as createClient } from '@/lib/supabase/server';
+import { apiError, apiSuccess, ERRORS } from '@/lib/api-response';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: '인증이 필요합니다' }, { status: 401 });
+      return apiError(ERRORS.UNAUTHORIZED, { status: 401 });
     }
 
     const { data: project, error } = await (supabase as any)
@@ -24,14 +25,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (error || !project) {
-      return NextResponse.json({ error: '프로젝트를 찾을 수 없습니다' }, { status: 404 });
+      return apiError(ERRORS.NOT_FOUND, { status: 404 });
     }
 
-    return NextResponse.json({ project });
+    return apiSuccess({ project });
   } catch (error) {
     console.error('Get project error:', error);
-    return NextResponse.json({ error: '서버 오류' }, { status: 500 });
+    return apiError(ERRORS.INTERNAL, { status: 500 });
   }
+}
+
+// Helper function to generate random code
+function generateRandomCode(length: number): string {
+  return Math.random().toString(36).substring(2, 2 + length).toUpperCase();
 }
 
 // PATCH - 프로젝트 수정
@@ -42,7 +48,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: '인증이 필요합니다' }, { status: 401 });
+      return apiError(ERRORS.UNAUTHORIZED, { status: 401 });
     }
 
     const updates = await request.json() as Record<string, unknown>;
@@ -57,6 +63,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // Handle password regeneration
+    if (updates.regeneratePassword === true) {
+      filteredUpdates.password = generateRandomCode(4);
+    }
+
+    // Handle code regeneration
+    if (updates.regenerateCode === true) {
+      filteredUpdates.code = generateRandomCode(6);
+    }
+
     const { data: project, error } = await (supabase as any)
       .from('projects')
       .update(filteredUpdates)
@@ -69,10 +85,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       throw error;
     }
 
-    return NextResponse.json({ project });
+    return apiSuccess({ project });
   } catch (error) {
     console.error('Update project error:', error);
-    return NextResponse.json({ error: '서버 오류' }, { status: 500 });
+    return apiError(ERRORS.INTERNAL, { status: 500 });
   }
 }
 
@@ -84,7 +100,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: '인증이 필요합니다' }, { status: 401 });
+      return apiError(ERRORS.UNAUTHORIZED, { status: 401 });
     }
 
     const { error } = await (supabase as any)
@@ -97,9 +113,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       throw error;
     }
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({ success: true });
   } catch (error) {
     console.error('Delete project error:', error);
-    return NextResponse.json({ error: '서버 오류' }, { status: 500 });
+    return apiError(ERRORS.INTERNAL, { status: 500 });
   }
 }

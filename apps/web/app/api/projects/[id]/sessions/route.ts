@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient as createClient } from '@/lib/supabase/server';
+import { apiError, apiSuccess, ERRORS } from '@/lib/api-response';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: '인증이 필요합니다' }, { status: 401 });
+      return apiError(ERRORS.UNAUTHORIZED, { status: 401 });
     }
 
     // 프로젝트 소유권 확인
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (projectError || !project) {
-      return NextResponse.json({ error: '프로젝트를 찾을 수 없습니다' }, { status: 404 });
+      return apiError(ERRORS.NOT_FOUND, { status: 404 });
     }
 
     // 기존 활성 세션 확인
@@ -38,10 +39,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const existingSessionData = existingSession as { id: string } | null;
 
     if (existingSessionData) {
-      return NextResponse.json(
-        { error: '이미 활성 세션이 있습니다', sessionId: existingSessionData.id },
-        { status: 409 }
-      );
+      return apiError('이미 활성 세션이 있습니다', {
+        status: 409,
+        details: { sessionId: existingSessionData.id }
+      });
     }
 
     // 새 세션 생성
@@ -64,10 +65,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .update({ status: 'active' })
       .eq('id', projectId);
 
-    return NextResponse.json({ session }, { status: 201 });
+    return apiSuccess({ session }, { status: 201 });
   } catch (error) {
     console.error('Create session error:', error);
-    return NextResponse.json({ error: '서버 오류' }, { status: 500 });
+    return apiError(ERRORS.INTERNAL, { status: 500 });
   }
 }
 
@@ -79,7 +80,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: '인증이 필요합니다' }, { status: 401 });
+      return apiError(ERRORS.UNAUTHORIZED, { status: 401 });
     }
 
     // 프로젝트 소유권 확인
@@ -91,7 +92,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (!project) {
-      return NextResponse.json({ error: '프로젝트를 찾을 수 없습니다' }, { status: 404 });
+      return apiError(ERRORS.NOT_FOUND, { status: 404 });
     }
 
     const { data: sessions, error } = await (supabase as any)
@@ -104,9 +105,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       throw error;
     }
 
-    return NextResponse.json({ sessions });
+    return apiSuccess({ sessions });
   } catch (error) {
     console.error('Get sessions error:', error);
-    return NextResponse.json({ error: '서버 오류' }, { status: 500 });
+    return apiError(ERRORS.INTERNAL, { status: 500 });
   }
 }

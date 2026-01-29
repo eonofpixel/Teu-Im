@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient as createClient } from '@/lib/supabase/server';
+import { apiError, ERRORS } from '@/lib/api-response';
 import { generateSrt } from '@/lib/srt';
 
 interface RouteParams {
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: '인증이 필요합니다' }, { status: 401 });
+      return apiError(ERRORS.UNAUTHORIZED, { status: 401 });
     }
 
     // 프로젝트 소유권 확인
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (!project) {
-      return NextResponse.json({ error: '프로젝트를 찾을 수 없습니다' }, { status: 404 });
+      return apiError(ERRORS.NOT_FOUND, { status: 404 });
     }
 
     // 세션 존재 확인
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (!session) {
-      return NextResponse.json({ error: '세션을 찾을 수 없습니다' }, { status: 404 });
+      return apiError('세션을 찾을 수 없습니다', { status: 404 });
     }
 
     // 해석 데이터 조회
@@ -91,6 +92,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     console.error('Export SRT error:', error);
-    return NextResponse.json({ error: '서버 오류' }, { status: 500 });
+    return apiError(ERRORS.INTERNAL, { status: 500 });
   }
 }

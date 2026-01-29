@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient as createClient } from '@/lib/supabase/server';
+import { apiError, apiSuccess, ERRORS } from '@/lib/api-response';
 
 interface RouteParams {
   params: Promise<{ sessionId: string }>;
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: '인증이 필요합니다' }, { status: 401 });
+      return apiError(ERRORS.UNAUTHORIZED, { status: 401 });
     }
 
     // 세션 존재 및 소유권 확인
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (!session) {
-      return NextResponse.json({ error: '세션을 찾을 수 없습니다' }, { status: 404 });
+      return apiError('세션을 찾을 수 없습니다', { status: 404 });
     }
 
     const { data: project } = await (supabase as any)
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (!project) {
-      return NextResponse.json({ error: '프로젝트 소유권 확인 실패' }, { status: 403 });
+      return apiError(ERRORS.FORBIDDEN, { status: 403 });
     }
 
     // 요청 본문 파싱
@@ -71,14 +72,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       body.end_time_ms == null ||
       body.file_size_bytes == null
     ) {
-      return NextResponse.json(
-        { error: 'chunk_index, storage_path, start_time_ms, end_time_ms, file_size_bytes 필수' },
+      return apiError(
+        'chunk_index, storage_path, start_time_ms, end_time_ms, file_size_bytes 필수',
         { status: 400 }
       );
     }
 
     if (body.end_time_ms <= body.start_time_ms) {
-      return NextResponse.json({ error: 'end_time_ms는 start_time_ms보다 커야 합니다' }, { status: 400 });
+      return apiError('end_time_ms는 start_time_ms보다 커야 합니다', { status: 400 });
     }
 
     // audio_chunks 테이블에 삽입
@@ -98,15 +99,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (insertError) {
       // 중복 청크 인덱스 처리 (23505 = unique_violation)
       if (insertError.code === '23505') {
-        return NextResponse.json({ error: '이미 등록된 청크 인덱스입니다' }, { status: 409 });
+        return apiError(ERRORS.DUPLICATE, { status: 409 });
       }
       throw insertError;
     }
 
-    return NextResponse.json({ chunk }, { status: 201 });
+    return apiSuccess({ chunk }, { status: 201 });
   } catch (error) {
     console.error('Register audio chunk error:', error);
-    return NextResponse.json({ error: '서버 오류' }, { status: 500 });
+    return apiError(ERRORS.INTERNAL, { status: 500 });
   }
 }
 
@@ -121,7 +122,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: '인증이 필요합니다' }, { status: 401 });
+      return apiError(ERRORS.UNAUTHORIZED, { status: 401 });
     }
 
     // 세션 존재 및 소유권 확인
@@ -132,7 +133,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (!session) {
-      return NextResponse.json({ error: '세션을 찾을 수 없습니다' }, { status: 404 });
+      return apiError('세션을 찾을 수 없습니다', { status: 404 });
     }
 
     const { data: project } = await (supabase as any)
@@ -143,7 +144,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (!project) {
-      return NextResponse.json({ error: '프로젝트 소유권 확인 실패' }, { status: 403 });
+      return apiError(ERRORS.FORBIDDEN, { status: 403 });
     }
 
     // 페이지네이션 파라미터
@@ -177,7 +178,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       })
     );
 
-    return NextResponse.json({
+    return apiSuccess({
       chunks: chunksWithUrls,
       total: count,
       limit,
@@ -185,6 +186,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     console.error('List audio chunks error:', error);
-    return NextResponse.json({ error: '서버 오류' }, { status: 500 });
+    return apiError(ERRORS.INTERNAL, { status: 500 });
   }
 }

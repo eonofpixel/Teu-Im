@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient as createClient } from '@/lib/supabase/server';
+import { apiError, apiSuccess, ERRORS } from '@/lib/api-response';
 
 interface RouteParams {
   params: Promise<{ sessionId: string }>;
@@ -16,17 +17,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: '인증이 필요합니다' }, { status: 401 });
+      return apiError(ERRORS.UNAUTHORIZED, { status: 401 });
     }
 
     const body = await request.json();
     const { status } = body as { status?: string };
 
     if (!status || !VALID_STATUSES.includes(status as ValidStatus)) {
-      return NextResponse.json(
-        { error: '유효한 상태가 필요합니다 (active, paused, ended)' },
-        { status: 400 }
-      );
+      return apiError('유효한 상태가 필요합니다 (active, paused, ended)', { status: 400 });
     }
 
     // 세션 조회 및 프로젝트 소유권 확인
@@ -37,7 +35,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (sessionError || !session) {
-      return NextResponse.json({ error: '세션을 찾을 수 없습니다' }, { status: 404 });
+      return apiError('세션을 찾을 수 없습니다', { status: 404 });
     }
 
     // 프로젝트 소유권 확인
@@ -49,7 +47,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (projectError || !project) {
-      return NextResponse.json({ error: '프로젝트를 찾을 수 없습니다' }, { status: 404 });
+      return apiError(ERRORS.NOT_FOUND, { status: 404 });
     }
 
     // 상태 전이 유효성 검사
@@ -62,8 +60,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     };
 
     if (!validTransitions[currentStatus]?.includes(status)) {
-      return NextResponse.json(
-        { error: `'${currentStatus}'에서 '${status}'로 전이할 수 없습니다` },
+      return apiError(
+        `'${currentStatus}'에서 '${status}'로 전이할 수 없습니다`,
         { status: 409 }
       );
     }
@@ -85,9 +83,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       throw updateError;
     }
 
-    return NextResponse.json({ session: updatedSession });
+    return apiSuccess({ session: updatedSession });
   } catch (error) {
     console.error('Update session status error:', error);
-    return NextResponse.json({ error: '서버 오류' }, { status: 500 });
+    return apiError(ERRORS.INTERNAL, { status: 500 });
   }
 }

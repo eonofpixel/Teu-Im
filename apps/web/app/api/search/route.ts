@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient as createClient } from "@/lib/supabase/server";
+import { apiError, apiSuccess, ERRORS } from "@/lib/api-response";
 
 // ─── Response types ────────────────────────────────────────────────────────
 
@@ -91,17 +92,14 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: "인증이 필요합니다" },
-        { status: 401 }
-      );
+      return apiError(ERRORS.UNAUTHORIZED, { status: 401 });
     }
 
     // Parse params
     const params = parseParams(request.nextUrl);
     if (!params) {
-      return NextResponse.json(
-        { error: "잘못된 요청 파라미터입니다 (limit: 1-100, offset: >= 0)" },
+      return apiError(
+        "잘못된 요청 파라미터입니다 (limit: 1-100, offset: >= 0)",
         { status: 400 }
       );
     }
@@ -110,13 +108,12 @@ export async function GET(request: NextRequest) {
 
     // Empty query returns empty results (not an error)
     if (!q) {
-      const response: SearchResponse = {
+      return apiSuccess({
         results: [],
         total: 0,
         limit,
         offset,
-      };
-      return NextResponse.json(response);
+      });
     }
 
     // If project_id provided, verify ownership
@@ -129,10 +126,7 @@ export async function GET(request: NextRequest) {
         .single();
 
       if (!project) {
-        return NextResponse.json(
-          { error: "프로젝트를 찾을 수 없습니다" },
-          { status: 404 }
-        );
+        return apiError(ERRORS.NOT_FOUND, { status: 404 });
       }
     }
 
@@ -153,13 +147,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (searchProjectIds.length === 0) {
-      const response: SearchResponse = {
+      return apiSuccess({
         results: [],
         total: 0,
         limit,
         offset,
-      };
-      return NextResponse.json(response);
+      });
     }
 
     // Execute search across each project and merge results.
@@ -193,9 +186,7 @@ export async function GET(request: NextRequest) {
 
       if (searchError) {
         console.error("Search RPC error:", searchError);
-        return NextResponse.json({ error: "검색 중 오류가 발생했습니다" }, {
-          status: 500,
-        });
+        return apiError("검색 중 오류가 발생했습니다", { status: 500 });
       }
 
       const typed = rows as Array<{
@@ -241,19 +232,14 @@ export async function GET(request: NextRequest) {
       allResults = allResults.slice(offset, offset + limit);
     }
 
-    const response: SearchResponse = {
+    return apiSuccess({
       results: allResults,
       total: totalCount,
       limit,
       offset,
-    };
-
-    return NextResponse.json(response);
+    });
   } catch (error) {
     console.error("Search endpoint error:", error);
-    return NextResponse.json(
-      { error: "서버 오류가 발생했습니다" },
-      { status: 500 }
-    );
+    return apiError(ERRORS.INTERNAL, { status: 500 });
   }
 }

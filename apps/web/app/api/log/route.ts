@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiSuccess } from "@/lib/api-response";
 
 /**
  * Server-side log collector.
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     // Basic shape validation — reject malformed payloads silently
     if (!body?.level || !body?.source || !body?.message) {
-      return NextResponse.json(null, { status: 204 });
+      return apiSuccess(null, { status: 204 });
     }
 
     // Structured log output — captured by Vercel / hosting log aggregation
@@ -47,12 +48,9 @@ export async function POST(request: NextRequest) {
     console.log(JSON.stringify(logLine));
 
     // 204 No Content — client does not need a response body
-    return NextResponse.json(null, {
-      status: 204,
-      headers: { "Cache-Control": "no-store" },
-    });
+    return apiSuccess(null, { status: 204 });
   } catch {
     // Never fail — logging infrastructure must be resilient
-    return NextResponse.json(null, { status: 204 });
+    return apiSuccess(null, { status: 204 });
   }
 }
