@@ -15,6 +15,17 @@ interface RouteParams {
 const VALID_FORMATS: SubtitleFormat[] = ["srt", "vtt"];
 const VALID_LANGUAGES: SubtitleLanguage[] = ["original", "translated", "both"];
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+// OPTIONS - CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: corsHeaders });
+}
+
 // GET /api/sessions/[sessionId]/export?format=srt|vtt&language=original|translated|both
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
@@ -124,6 +135,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       headers: {
         "Content-Type": result.contentType,
         "Content-Disposition": `attachment; filename="${result.filename}"`,
+        ...corsHeaders,
       },
     });
   } catch (error) {

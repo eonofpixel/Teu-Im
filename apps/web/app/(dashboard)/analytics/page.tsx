@@ -303,15 +303,25 @@ export default function AnalyticsPage() {
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [projectSummaries, setProjectSummaries] = useState<ProjectSummary[]>([]);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (isRetry = false) => {
     try {
       setLoading(true);
-      setError(null);
+      if (!isRetry) {
+        setError(null);
+      }
 
       const supabase = createBrowserClient();
-      const {
-        data: { session: authSession },
-      } = await supabase.auth.getSession();
+
+      // Add timeout to prevent hanging requests
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("요청 시간이 초과되었습니다")), 15000)
+      );
+
+      const sessionPromise = supabase.auth.getSession();
+      const { data: { session: authSession } } = await Promise.race([
+        sessionPromise,
+        timeoutPromise
+      ]) as Awaited<typeof sessionPromise>;
 
       if (!authSession) {
         setLoading(false);
@@ -458,11 +468,16 @@ export default function AnalyticsPage() {
 
       setRecentActivity(activity);
       setLoading(false);
-    } catch {
-      setError("데이터를 로드하는 중 오류가 발생했습니다");
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "데이터를 로드하는 중 오류가 발생했습니다";
+      setError(errorMessage);
       setLoading(false);
     }
   }, []);
+
+  const handleRetry = useCallback(() => {
+    fetchData(true);
+  }, [fetchData]);
 
   useEffect(() => {
     fetchData();
@@ -480,19 +495,44 @@ export default function AnalyticsPage() {
         <div className="mb-6">
           <h1 className="text-xl font-bold text-white">분석</h1>
         </div>
-        <div className="rounded-xl border border-gray-800 bg-gray-900 p-12 text-center">
-          <div className="mx-auto w-12 h-12 rounded-full bg-red-900/20 flex items-center justify-center mb-4">
-            <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <div className="rounded-xl border border-red-800/50 bg-red-900/10 p-12 text-center">
+          <div className="mx-auto w-16 h-16 rounded-full bg-red-900/20 flex items-center justify-center mb-6">
+            <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <p className="text-red-400 text-sm mb-4">{error}</p>
-          <button
-            onClick={fetchData}
-            className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
-          >
-            다시 시도 →
-          </button>
+          <h2 className="text-xl font-bold text-white mb-3">데이터를 불러올 수 없습니다</h2>
+          <p className="text-sm text-gray-400 mb-6 max-w-md mx-auto">{error}</p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={handleRetry}
+              disabled={loading}
+              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-950"
+            >
+              {loading ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  재시도 중...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                  </svg>
+                  다시 시도
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => window.location.href = "/projects"}
+              className="rounded-xl border border-gray-700 px-5 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-950"
+            >
+              프로젝트로 이동
+            </button>
+          </div>
         </div>
       </div>
     );

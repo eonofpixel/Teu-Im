@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServerClient as createClient } from "@/lib/supabase/server";
 import { apiError, apiSuccess, ERRORS } from "@/lib/api-response";
 import { validateJoinProject } from "@/lib/validation";
@@ -10,6 +10,17 @@ import { logError } from "@/lib/logger";
 
 /** Token lifetime in milliseconds (15 minutes). */
 const TOKEN_TTL_MS = 15 * 60 * 1000;
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+// OPTIONS - CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: corsHeaders });
+}
 
 // ─── POST /api/audience/token ────────────────────────────────────────────────
 // 프로젝트 참석자용 단기 토큰 발급 (15분 유효)

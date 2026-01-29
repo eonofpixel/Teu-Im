@@ -2,8 +2,64 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { memo } from "react";
+import dynamic from "next/dynamic";
 import { LogoutButton } from "@/components/logout-button";
-import { OnboardingWizard } from "@/components/OnboardingWizard";
+
+// Dynamic import for OnboardingWizard - only loads when needed for first-time users
+const OnboardingWizard = dynamic(
+  () => import("@/components/OnboardingWizard").then((mod) => ({ default: mod.OnboardingWizard })),
+  {
+    ssr: false,
+    loading: () => null, // No loading state needed - it's a first-time modal
+  }
+);
+
+// ─── SVG 아이콘 컴포넌트 ─────────────────────────────────
+// Memo: Static SVG icons don't need re-rendering
+
+const FolderIcon = memo(function FolderIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+    </svg>
+  );
+});
+
+const MicIcon = memo(function MicIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6.75 6.75 0 006.75-6.75H17.25a5.25 5.25 0 01-10.5 0H5.25a6.75 6.75 0 006.75 6.75z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75V21M12 6.75a.75.75 0 00-.75.75v6a.75.75 0 001.5 0v-6a.75.75 0 00-.75-.75z" />
+      <rect x="10.5" y="4" width="3" height="10" rx="1.5" stroke="none" fill="currentColor" opacity="0.15" />
+    </svg>
+  );
+});
+
+const DownloadIcon = memo(function DownloadIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+    </svg>
+  );
+});
+
+const BarChartIcon = memo(function BarChartIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25a1.125 1.125 0 01-1.125-1.125v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+    </svg>
+  );
+});
+
+const SettingsIcon = memo(function SettingsIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+});
 
 // ─── 네비게이션 아이템 정의 ───────────────────────────────
 
@@ -18,72 +74,30 @@ const NAV_ITEMS = [
 type NavItem = {
   href: string;
   label: string;
-  icon: () => React.ReactElement;
+  icon: React.ComponentType;
   badge?: string;
 };
 
-// ─── SVG 아이콘 컴포넌트 ─────────────────────────────────
-
-function FolderIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-    </svg>
-  );
-}
-
-function MicIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6.75 6.75 0 006.75-6.75H17.25a5.25 5.25 0 01-10.5 0H5.25a6.75 6.75 0 006.75 6.75z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75V21M12 6.75a.75.75 0 00-.75.75v6a.75.75 0 001.5 0v-6a.75.75 0 00-.75-.75z" />
-      <rect x="10.5" y="4" width="3" height="10" rx="1.5" stroke="none" fill="currentColor" opacity="0.15" />
-    </svg>
-  );
-}
-
-function DownloadIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-    </svg>
-  );
-}
-
-function BarChartIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25a1.125 1.125 0 01-1.125-1.125v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-    </svg>
-  );
-}
-
-function SettingsIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  );
-}
-
 // ─── NavLink 컴포넌트 (사이드바 - 활성 상태 표시) ──────────
+// Memo: Navigation links only re-render when pathname changes
 
-function NavLink({ href, label, icon: Icon, badge, pathname }: NavItem & { pathname: string }) {
+const NavLink = memo(function NavLink({ href, label, icon: Icon, badge, pathname }: NavItem & { pathname: string }) {
   const isActive = pathname === href || pathname.startsWith(href + "/");
 
   return (
     <Link
       href={href}
+      aria-current={isActive ? "page" : undefined}
       className={`
         flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-150
+        min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900
         ${isActive
           ? "bg-indigo-600/10 text-indigo-400 shadow-sm shadow-indigo-500/10"
           : "text-gray-400 hover:bg-gray-800 hover:text-white"
         }
       `}
     >
-      <span className={isActive ? "text-indigo-400" : "text-gray-500"}>
+      <span className={isActive ? "text-indigo-400" : "text-gray-500"} aria-hidden="true">
         <Icon />
       </span>
       <span className="flex-1">{label}</span>
@@ -94,38 +108,45 @@ function NavLink({ href, label, icon: Icon, badge, pathname }: NavItem & { pathn
       )}
     </Link>
   );
-}
+});
 
 // ─── MobileNavLink 컴포넌트 (하단 바 - 아이콘 + 라벨 세로 배치) ──
+// Memo: Mobile nav links only re-render when pathname changes
 
-function MobileNavLink({ href, label, icon: Icon, badge, pathname }: NavItem & { pathname: string }) {
+const MobileNavLink = memo(function MobileNavLink({ href, label, icon: Icon, badge, pathname }: NavItem & { pathname: string }) {
   const isActive = pathname === href || pathname.startsWith(href + "/");
 
   return (
     <Link
       href={href}
+      aria-current={isActive ? "page" : undefined}
+      aria-label={label}
       className={`
         relative flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors duration-150
+        min-h-[44px] min-w-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500
         ${isActive ? "text-indigo-400" : "text-gray-500"}
       `}
     >
       {/* 활성 상태 인디케이터 (상단 라인) */}
       {isActive && (
-        <span className="absolute top-0 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full bg-indigo-400" />
+        <span className="absolute top-0 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full bg-indigo-400" aria-hidden="true" />
       )}
-      <Icon />
+      <span aria-hidden="true">
+        <Icon />
+      </span>
       <span className="text-xs font-medium leading-none">{label}</span>
       {/* 배지 (NEW 등) */}
       {badge && (
-        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-indigo-400" />
+        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-indigo-400" aria-label={badge} />
       )}
     </Link>
   );
-}
+});
 
 // ─── 사이드바 콘텐츠 ─────────────────────────────────────
+// Memo: Sidebar only re-renders when pathname or user info changes
 
-function SidebarContent({ pathname, userEmail, userName }: {
+const SidebarContent = memo(function SidebarContent({ pathname, userEmail, userName }: {
   pathname: string;
   userEmail: string;
   userName: string;
@@ -161,7 +182,7 @@ function SidebarContent({ pathname, userEmail, userName }: {
       </div>
     </>
   );
-}
+});
 
 // ─── 메인 레이아웃 클라이언트 ─────────────────────────────
 
@@ -183,6 +204,14 @@ export function DashboardClient({
 
   return (
     <>
+      {/* Skip to main content link for keyboard navigation */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-lg focus:bg-indigo-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-950"
+      >
+        메인 콘텐츠로 건너뛰기
+      </a>
+
       {/* Onboarding wizard for first-time users */}
       <OnboardingWizard />
 
@@ -206,7 +235,7 @@ export function DashboardClient({
           </header>
 
           {/* 페이지 콘텐츠 - 모바일에서 하단 바 높이만큼 여백 추가 */}
-          <main className="flex-1 p-4 lg:p-6 pb-24 md:pb-6 animate-fade-in">
+          <main id="main-content" className="flex-1 p-4 lg:p-6 pb-24 md:pb-6 animate-fade-in">
             {children}
           </main>
         </div>

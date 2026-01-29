@@ -7,7 +7,15 @@ import { NextResponse } from "next/server";
  *   1. Consistent JSON envelope (error messages in Korean)
  *   2. Proper cache-control headers
  *   3. Rate-limit headers when applicable
+ *   4. CORS headers for desktop app compatibility
  */
+
+// CORS headers for desktop app (Tauri)
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-audience-token',
+};
 
 interface ApiErrorOptions {
   status?: number;
@@ -39,6 +47,11 @@ export function apiError(
 
   const headers = new Headers();
   headers.set("Cache-Control", "no-store");
+
+  // Add CORS headers
+  Object.entries(CORS_HEADERS).forEach(([key, value]) => {
+    headers.set(key, value);
+  });
 
   if (rateLimitHeaders) {
     headers.set("X-RateLimit-Remaining", String(rateLimitHeaders.remaining));
@@ -77,6 +90,11 @@ export function apiSuccess(
   } else {
     headers.set("Cache-Control", "no-store");
   }
+
+  // Add CORS headers
+  Object.entries(CORS_HEADERS).forEach(([key, value]) => {
+    headers.set(key, value);
+  });
 
   if (rateLimitHeaders) {
     headers.set("X-RateLimit-Remaining", String(rateLimitHeaders.remaining));

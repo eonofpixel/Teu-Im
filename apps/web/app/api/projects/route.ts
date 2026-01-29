@@ -1,9 +1,20 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient as createClient } from '@/lib/supabase/server';
 import { generateProjectCode } from '@teu-im/shared';
 import { apiError, apiSuccess, ERRORS } from '@/lib/api-response';
 import { validateCreateProject } from '@/lib/validation';
 import { logError } from '@/lib/logger';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+// OPTIONS - CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: corsHeaders });
+}
 
 // GET - 프로젝트 목록 조회
 export async function GET() {

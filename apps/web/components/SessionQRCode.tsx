@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, memo, useMemo } from "react";
 import { QRCodeSVG } from "qrcode.react";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -118,8 +118,9 @@ function CheckIcon() {
 }
 
 // ─── Main component ────────────────────────────────────────────────────────
+// Memo: QR code only needs to re-render when URL changes
 
-export function SessionQRCode({
+export const SessionQRCode = memo(function SessionQRCode({
   projectCode,
   password,
   baseUrl,
@@ -136,7 +137,11 @@ export function SessionQRCode({
     }
   }, [baseUrl]);
 
-  const audienceUrl = buildAudienceUrl(resolvedBaseUrl, projectCode, password, token);
+  // Memo: Only recalculate URL when inputs change
+  const audienceUrl = useMemo(() =>
+    buildAudienceUrl(resolvedBaseUrl, projectCode, password, token),
+    [resolvedBaseUrl, projectCode, password, token]
+  );
 
   // ─── Copy handler ───────────────────────────────────────────────────
 
@@ -161,6 +166,10 @@ export function SessionQRCode({
       setTimeout(() => setCopied(false), 2000);
     }
   }, [audienceUrl]);
+
+  const togglePassword = useCallback(() => {
+    setShowPassword(v => !v);
+  }, []);
 
   // ─── Render ─────────────────────────────────────────────────────────
 
@@ -236,7 +245,7 @@ export function SessionQRCode({
 
         <button
           type="button"
-          onClick={() => setShowPassword((v) => !v)}
+          onClick={togglePassword}
           className="text-gray-600 hover:text-indigo-400 transition-colors"
           aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보여주기"}
         >
@@ -271,4 +280,4 @@ export function SessionQRCode({
       )}
     </div>
   );
-}
+});

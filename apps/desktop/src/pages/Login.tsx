@@ -40,10 +40,35 @@ export function Login() {
   };
 
   return (
-    <div className="flex-1 flex items-center justify-center p-8">
-      <div className="w-full max-w-md">
+    <div className="flex-1 flex items-center justify-center p-8 relative overflow-hidden">
+      {/* Background gradient orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-30%] left-[-15%] w-[800px] h-[800px] rounded-full bg-indigo-600 opacity-10 blur-3xl" />
+        <div className="absolute bottom-[-25%] right-[-15%] w-[700px] h-[700px] rounded-full bg-indigo-500 opacity-8 blur-3xl" />
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
         {/* Logo / Title */}
         <div className="text-center mb-12">
+          <div className="flex items-center justify-center gap-2.5 mb-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center shadow-lg shadow-indigo-900/40">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-white"
+              >
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
+              </svg>
+            </div>
+          </div>
           <h1 className="text-4xl font-bold text-white tracking-tight">
             Teu-Im
           </h1>
@@ -90,7 +115,7 @@ export function Login() {
           </div>
 
           {error && (
-            <div className="bg-red-900/20 border border-red-800/40 rounded-xl px-5 py-4">
+            <div className="bg-red-900/20 border border-red-800/40 rounded-2xl px-5 py-4 animate-slide-up">
               <p className="text-red-300 text-base">
                 {error}
               </p>
@@ -100,7 +125,7 @@ export function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-800 disabled:cursor-not-allowed text-white font-semibold rounded-xl px-6 py-5 text-lg transition-colors min-h-[60px]"
+            className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 disabled:from-indigo-800 disabled:to-indigo-800 disabled:cursor-not-allowed text-white font-semibold rounded-xl px-6 py-5 text-lg transition-all hover:shadow-lg hover:shadow-indigo-900/30 min-h-[60px]"
           >
             {loading
               ? "처리 중..."

@@ -266,6 +266,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       viewBox="0 0 24 24"
                       stroke="currentColor"
                       strokeWidth={2}
+                      aria-hidden="true"
                     >
                       <path
                         strokeLinecap="round"
@@ -295,6 +296,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   <button
                     type="button"
                     onClick={handleNextFromWelcome}
+                    aria-label="온보딩 시작하기"
                     className="w-full rounded-xl bg-indigo-600 py-4 text-base font-semibold text-white shadow-lg shadow-indigo-600/30 transition-all hover:bg-indigo-500 hover:shadow-xl hover:shadow-indigo-600/40 active:scale-[0.98]"
                   >
                     시작하기
@@ -303,6 +305,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   <button
                     type="button"
                     onClick={handleSkip}
+                    aria-label="온보딩 나중에 하기"
                     className="w-full rounded-xl border border-gray-800 py-4 text-base font-medium text-gray-400 transition-all hover:border-gray-700 hover:bg-gray-800/50 hover:text-gray-300 active:scale-[0.98]"
                   >
                     나중에 하기
@@ -363,6 +366,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     type="button"
                     onClick={handleSaveApiKey}
                     disabled={loading}
+                    aria-label="API 키 저장하고 다음 단계로"
                     className="w-full rounded-xl bg-indigo-600 py-4 text-base font-semibold text-white shadow-lg shadow-indigo-600/30 transition-all hover:bg-indigo-500 hover:shadow-xl hover:shadow-indigo-600/40 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {loading ? "저장 중..." : "저장하고 계속하기"}
@@ -372,6 +376,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     type="button"
                     onClick={handleSkipApiKey}
                     disabled={loading}
+                    aria-label="API 키 설정 건너뛰기"
                     className="w-full rounded-xl border border-gray-800 py-4 text-base font-medium text-gray-400 transition-all hover:border-gray-700 hover:bg-gray-800/50 hover:text-gray-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     나중에 설정하기
@@ -458,6 +463,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     <button
                       type="submit"
                       disabled={loading || targetLangs.length === 0}
+                      aria-label="프로젝트 생성하고 온보딩 완료"
                       className="w-full rounded-xl bg-indigo-600 py-4 text-base font-semibold text-white shadow-lg shadow-indigo-600/30 transition-all hover:bg-indigo-500 hover:shadow-xl hover:shadow-indigo-600/40 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {loading ? "생성 중..." : "프로젝트 생성하고 완료"}
@@ -467,6 +473,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       type="button"
                       onClick={handleSkipProject}
                       disabled={loading}
+                      aria-label="프로젝트 생성 건너뛰기"
                       className="w-full rounded-xl border border-gray-800 py-4 text-base font-medium text-gray-400 transition-all hover:border-gray-700 hover:bg-gray-800/50 hover:text-gray-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       나중에 만들기
@@ -481,6 +488,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           <div className="mt-6 text-center">
             <button
               onClick={handleSkip}
+              aria-label="전체 온보딩 건너뛰기"
               className="text-sm font-medium text-gray-500 transition-colors hover:text-gray-400"
             >
               온보딩 건너뛰기

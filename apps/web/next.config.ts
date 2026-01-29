@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import withBundleAnalyzer from '@next/bundle-analyzer';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -6,4 +7,6 @@ const nextConfig: NextConfig = {
   output: "standalone",
 };
 
-export default nextConfig;
+export default process.env.ANALYZE === 'true'
+  ? withBundleAnalyzer({ enabled: true })(nextConfig)
+  : nextConfig;

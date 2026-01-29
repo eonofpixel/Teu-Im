@@ -4,10 +4,8 @@ import { LiveWaveform } from "@/components/LiveWaveform";
 import {
   StatefulButton,
   StreamingTextSimple,
-  ConnectionIndicator,
   getLanguageNativeName,
   type SessionState,
-  type ConnectionStatus,
 } from "@teu-im/ui";
 import {
   startMultiLangSoniox,
@@ -61,7 +59,6 @@ export function Interpreter() {
   const setCurrentSession = useAppStore((state) => state.setCurrentSession);
   const isRecording = useAppStore((state) => state.isRecording);
   const isStreaming = useAppStore((state) => state.isStreaming);
-  const isSonioxConnected = useAppStore((state) => state.isSonioxConnected);
   const setIsRecording = useAppStore((state) => state.setIsRecording);
   const setIsStreaming = useAppStore((state) => state.setIsStreaming);
   const setSonioxConnected = useAppStore((state) => state.setSonioxConnected);
@@ -93,14 +90,6 @@ export function Interpreter() {
     if (isRecording) return "recording";
     return "idle";
   }, [isRecording, isStreaming, isPaused]);
-
-  // Map Soniox connection to ConnectionIndicator status
-  const connectionStatus = useMemo((): ConnectionStatus => {
-    if (error) return "error";
-    if (isRecording && isSonioxConnected) return "connected";
-    if (isRecording && !isSonioxConnected) return "connecting";
-    return "disconnected";
-  }, [isRecording, isSonioxConnected, error]);
 
   // Timer management
   useEffect(() => {

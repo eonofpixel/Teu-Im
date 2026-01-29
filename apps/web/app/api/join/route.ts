@@ -1,9 +1,20 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient as createClient } from '@/lib/supabase/server';
 import { apiError, apiSuccess, ERRORS } from '@/lib/api-response';
 import { validateJoinProject } from '@/lib/validation';
 import { verifyToken } from '@/lib/audience-token';
 import { logError } from '@/lib/logger';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-audience-token',
+};
+
+// OPTIONS - CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: corsHeaders });
+}
 
 // ─── 속도 제한 (in-memory, 프로젝트 코드별) ───────────────────
 

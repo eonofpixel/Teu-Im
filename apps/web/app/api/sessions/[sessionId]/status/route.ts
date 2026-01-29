@@ -9,6 +9,17 @@ interface RouteParams {
 const VALID_STATUSES = ['active', 'paused', 'ended'] as const;
 type ValidStatus = typeof VALID_STATUSES[number];
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'PATCH, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+// OPTIONS - CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: corsHeaders });
+}
+
 // PATCH - 세션 상태 업데이트
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {

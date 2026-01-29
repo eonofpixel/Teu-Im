@@ -3,6 +3,11 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { ServiceWorkerRegistrar } from "@/components/service-worker-registrar";
+import { WebVitals } from "@/components/WebVitals";
+import { validateEnv } from "@/lib/env";
+
+// Validate environment variables at application startup
+validateEnv();
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -33,6 +38,7 @@ export default function RootLayout({
       >
         <ErrorBoundary>{children}</ErrorBoundary>
         <ServiceWorkerRegistrar />
+        <WebVitals />
       </body>
     </html>
   );

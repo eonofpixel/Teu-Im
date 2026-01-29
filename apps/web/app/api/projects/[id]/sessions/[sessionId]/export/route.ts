@@ -7,6 +7,17 @@ interface RouteParams {
   params: Promise<{ id: string; sessionId: string }>;
 }
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+// OPTIONS - CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: corsHeaders });
+}
+
 // GET - 세션 SRT 파일 내보내기
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
@@ -88,6 +99,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'Content-Disposition': `attachment; filename="${filename}"`,
+        ...corsHeaders,
       },
     });
   } catch (error) {

@@ -137,7 +137,7 @@ function ActionButtons({
           e.stopPropagation();
           onEdit();
         }}
-        className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all duration-200"
+        className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all duration-200 min-w-[44px] min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500"
         aria-label="수정"
       >
         <PencilIcon />
@@ -145,7 +145,7 @@ function ActionButtons({
       <Link
         href={`/projects/${projectId}/sessions`}
         onClick={(e) => e.stopPropagation()}
-        className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all duration-200"
+        className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all duration-200 min-w-[44px] min-h-[44px] inline-flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
         aria-label="세션 보기"
       >
         <LayersIcon />
@@ -153,7 +153,7 @@ function ActionButtons({
       <Link
         href={`/projects/${projectId}/settings`}
         onClick={(e) => e.stopPropagation()}
-        className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all duration-200"
+        className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all duration-200 min-w-[44px] min-h-[44px] inline-flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
         aria-label="설정"
       >
         <SettingsIcon />
@@ -163,7 +163,7 @@ function ActionButtons({
           e.stopPropagation();
           onDelete();
         }}
-        className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-900/20 transition-all duration-200"
+        className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-900/20 transition-all duration-200 min-w-[44px] min-h-[44px] focus:outline-none focus:ring-2 focus:ring-red-500"
         aria-label="삭제"
       >
         <TrashIcon />
@@ -200,14 +200,14 @@ function DeleteConfirmModal({
           <button
             onClick={onCancel}
             disabled={loading}
-            className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 disabled:opacity-50"
+            className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 disabled:opacity-50 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-gray-500"
           >
             취소
           </button>
           <button
             onClick={onConfirm}
             disabled={loading}
-            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] focus:outline-none focus:ring-2 focus:ring-red-500"
           >
             {loading ? "삭제 중..." : "삭제 확인"}
           </button>
@@ -231,7 +231,7 @@ function EmptyProjects() {
       </p>
       <Link
         href="/projects/new"
-        className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold shadow-lg shadow-indigo-600/30 transition-all duration-200 hover:shadow-indigo-600/50"
+        className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold shadow-lg shadow-indigo-600/30 transition-all duration-200 hover:shadow-indigo-600/50 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-950"
       >
         <PlusIcon />
         새 프로젝트 만들기
@@ -307,14 +307,14 @@ function EditModal({
           <button
             onClick={onClose}
             disabled={saving}
-            className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 disabled:opacity-50"
+            className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 disabled:opacity-50 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-gray-500"
           >
             취소
           </button>
           <button
             onClick={handleSave}
             disabled={saving || !name.trim()}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             {saving ? "저장 중..." : "저장"}
           </button>
@@ -374,7 +374,7 @@ function ProjectCard({
       <Link
         href={`/live?projectId=${project.id}`}
         onClick={(e) => e.stopPropagation()}
-        className="relative z-20 flex items-center justify-center gap-2.5 w-full py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-base font-semibold transition-all duration-200 shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/40 hover:scale-[1.02] mb-4"
+        className="relative z-20 flex items-center justify-center gap-2.5 w-full py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-base font-semibold transition-all duration-200 shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/40 hover:scale-[1.02] mb-4 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900"
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
@@ -418,57 +418,86 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [sessionCounts, setSessionCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const fetchData = useCallback(async () => {
-    const supabase = createBrowserClient();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session) {
-      setLoading(false);
-      return;
-    }
-
-    const { data } = await (supabase as any)
-      .from("projects")
-      .select("*")
-      .eq("user_id", session.user.id)
-      .order("created_at", { ascending: false });
-
-    if (data) {
-      const mapped: Project[] = data.map((row: any) => ({
-        id: row.id,
-        userId: row.user_id,
-        name: row.name,
-        code: row.code,
-        password: row.password,
-        sourceLang: row.source_lang as Project["sourceLang"],
-        targetLang: row.target_lang as Project["targetLang"],
-        targetLangs: (row.target_langs as string[]) || [row.target_lang],
-        status: row.status as Project["status"],
-        createdAt: row.created_at,
-      }));
-
-      setProjects(mapped);
-
-      // 각 프로젝트의 세션 수 조회
-      const counts: Record<string, number> = {};
-      for (const p of mapped) {
-        const { data: sessions } = await (supabase as any)
-          .from("sessions")
-          .select("id")
-          .eq("project_id", p.id);
-        counts[p.id] = sessions?.length ?? 0;
+  const fetchData = useCallback(async (isRetry = false) => {
+    try {
+      setLoading(true);
+      if (!isRetry) {
+        setError(null);
       }
-      setSessionCounts(counts);
-    }
 
-    setLoading(false);
+      const supabase = createBrowserClient();
+
+      // Add timeout to prevent hanging requests
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("요청 시간이 초과되었습니다")), 15000)
+      );
+
+      const sessionPromise = supabase.auth.getSession();
+      const { data: { session } } = await Promise.race([
+        sessionPromise,
+        timeoutPromise
+      ]) as Awaited<typeof sessionPromise>;
+
+      if (!session) {
+        setLoading(false);
+        return;
+      }
+
+      const { data, error: fetchError } = await (supabase as any)
+        .from("projects")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .order("created_at", { ascending: false });
+
+      if (fetchError) {
+        throw new Error("프로젝트 목록을 불러오는데 실패했습니다");
+      }
+
+      if (data) {
+        const mapped: Project[] = data.map((row: any) => ({
+          id: row.id,
+          userId: row.user_id,
+          name: row.name,
+          code: row.code,
+          password: row.password,
+          sourceLang: row.source_lang as Project["sourceLang"],
+          targetLang: row.target_lang as Project["targetLang"],
+          targetLangs: (row.target_langs as string[]) || [row.target_lang],
+          status: row.status as Project["status"],
+          createdAt: row.created_at,
+        }));
+
+        setProjects(mapped);
+
+        // 각 프로젝트의 세션 수 조회
+        const counts: Record<string, number> = {};
+        for (const p of mapped) {
+          const { data: sessions } = await (supabase as any)
+            .from("sessions")
+            .select("id")
+            .eq("project_id", p.id);
+          counts[p.id] = sessions?.length ?? 0;
+        }
+        setSessionCounts(counts);
+      }
+
+      setError(null);
+      setLoading(false);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "데이터를 로드하는 중 오류가 발생했습니다";
+      setError(errorMessage);
+      setLoading(false);
+    }
   }, []);
+
+  const handleRetry = useCallback(() => {
+    fetchData(true);
+  }, [fetchData]);
 
   useEffect(() => {
     fetchData();
@@ -513,7 +542,7 @@ export default function ProjectsPage() {
     );
   });
 
-  if (loading) {
+  if (loading && !error) {
     return (
       <div className="max-w-7xl">
         <div className="flex items-center justify-between mb-8">
@@ -532,6 +561,59 @@ export default function ProjectsPage() {
               <LoadingSkeleton variant="custom" width="8rem" height="1rem" borderRadius="var(--radius-sm)" className="mt-4" />
             </div>
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── 에러 상태 ─────────────────────────────────────────
+  if (error) {
+    return (
+      <div className="max-w-7xl">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-white">프로젝트</h1>
+            <p className="text-sm text-gray-400 mt-1.5">통역 프로젝트를 관리하세요</p>
+          </div>
+        </div>
+        <div className="rounded-xl border border-red-800/50 bg-red-900/10 p-12 text-center">
+          <div className="mx-auto w-16 h-16 rounded-full bg-red-900/20 flex items-center justify-center mb-6">
+            <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-white mb-3">프로젝트를 불러올 수 없습니다</h2>
+          <p className="text-sm text-gray-400 mb-6 max-w-md mx-auto">{error}</p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={handleRetry}
+              disabled={loading}
+              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-950"
+            >
+              {loading ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  재시도 중...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                  </svg>
+                  다시 시도
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => window.location.href = "/"}
+              className="rounded-xl border border-gray-700 px-5 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-950"
+            >
+              홈으로 이동
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -580,7 +662,7 @@ export default function ProjectsPage() {
           {/* 새 프로젝트 버튼 */}
           <Link
             href="/projects/new"
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/25 transition-all duration-200 hover:shadow-indigo-600/40 whitespace-nowrap"
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/25 transition-all duration-200 hover:shadow-indigo-600/40 whitespace-nowrap min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-950"
           >
             <PlusIcon />
             새 프로젝트

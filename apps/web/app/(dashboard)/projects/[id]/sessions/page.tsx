@@ -80,7 +80,7 @@ function SessionCard({ session }: { session: Session }) {
   return (
     <Link
       href={`/sessions/${session.id}`}
-      className="block rounded-xl border border-gray-800 bg-gray-900 p-4 transition-all hover:border-gray-700 hover:shadow-lg hover:shadow-indigo-500/5"
+      className="block rounded-xl border border-gray-800 bg-gray-900 p-4 transition-all hover:border-gray-700 hover:shadow-lg hover:shadow-indigo-500/5 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-950"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -193,7 +193,7 @@ export default function ProjectSessionsPage() {
     <div className="max-w-4xl">
       {/* 브레드크럼 */}
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-        <Link href="/projects" className="hover:text-white transition-colors">
+        <Link href="/projects" className="hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded">
           프로젝트
         </Link>
         <span>/</span>
@@ -210,7 +210,7 @@ export default function ProjectSessionsPage() {
         </div>
         <Link
           href={`/projects/${projectId}/analytics`}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm font-medium text-gray-300 transition-colors hover:border-gray-600 hover:text-white"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm font-medium text-gray-300 transition-colors hover:border-gray-600 hover:text-white min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />

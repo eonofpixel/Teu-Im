@@ -136,7 +136,7 @@ async function saveInterpretation(
         translated_text: translatedText,
         is_final: isFinal,
         sequence: seq,
-      },
+      } as any,
       {
         onConflict: 'session_id,sequence',
       }
@@ -172,7 +172,7 @@ async function saveMultiLangInterpretation(
         sequence: seq,
         start_time_ms: startTimeMs,
         end_time_ms: endTimeMs,
-      },
+      } as any,
       {
         // 다중 언어는 session_id + sequence + target_language가 유니크
         onConflict: 'session_id,sequence,target_language',

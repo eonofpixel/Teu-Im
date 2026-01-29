@@ -6,6 +6,17 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+// OPTIONS - CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: corsHeaders });
+}
+
 // GET - 프로젝트 상세 조회
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {

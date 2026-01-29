@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, memo, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { createBrowserClient } from "@/lib/supabase/browser";
 import type { Project } from "@teu-im/shared";
+import type { Database } from "@teu-im/supabase/src/types";
 import {
   startSoniox,
   stopSoniox,
@@ -15,9 +17,24 @@ import {
   type InterpretationResult,
 } from "@/lib/soniox";
 import { LiveWaveform } from "@/components/LiveWaveform";
-import { SessionQRCode } from "@/components/SessionQRCode";
 import { useAudiencePresence } from "@/hooks/useAudiencePresence";
 import { AudienceCounter } from "@/components/AudienceCounter";
+
+// Dynamic import for SessionQRCode - only loads when audience share section is opened
+const SessionQRCode = dynamic(
+  () => import("@/components/SessionQRCode").then((mod) => ({ default: mod.SessionQRCode })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col items-center gap-5 p-6 rounded-2xl border border-gray-800 bg-gray-900">
+        <div className="w-[200px] h-[200px] flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+        </div>
+        <p className="text-sm text-gray-500">QR 코드 생성 중...</p>
+      </div>
+    ),
+  }
+);
 
 // ─── 유틸: 언어 코드 → 표시명 ──────────────────────────────
 
@@ -80,11 +97,13 @@ function getStatusType(connected: boolean, recording: boolean, paused: boolean):
 }
 
 // ─── 프로젝트 헤더 (단일 프로젝트 또는 선택된 프로젝트) ──────
+// Memo: Static header only needs to render when project changes
 
-function ProjectHeader({ project }: { project: Project }) {
-  const targetLangs = project.targetLangs?.length
-    ? project.targetLangs
-    : [project.targetLang];
+const ProjectHeader = memo(function ProjectHeader({ project }: { project: Project }) {
+  const targetLangs = useMemo(() =>
+    project.targetLangs?.length ? project.targetLangs : [project.targetLang],
+    [project.targetLangs, project.targetLang]
+  );
 
   return (
     <div className="flex items-center gap-3">
@@ -101,11 +120,12 @@ function ProjectHeader({ project }: { project: Project }) {
       </div>
     </div>
   );
-}
+});
 
 // ─── 프로젝트 선택 드롭다운 ────────────────────────────────
+// Memo: Only re-render when projects list or selection changes
 
-function ProjectSelector({
+const ProjectSelector = memo(function ProjectSelector({
   projects,
   selectedProject,
   onChange,
@@ -116,6 +136,11 @@ function ProjectSelector({
   onChange: (project: Project | null) => void;
   disabled: boolean;
 }) {
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const proj = projects.find((p) => p.id === e.target.value) ?? null;
+    onChange(proj);
+  }, [projects, onChange]);
+
   return (
     <div>
       <label className="block text-xs font-medium text-gray-500 mb-2">
@@ -123,10 +148,7 @@ function ProjectSelector({
       </label>
       <select
         value={selectedProject?.id ?? ""}
-        onChange={(e) => {
-          const proj = projects.find((p) => p.id === e.target.value) ?? null;
-          onChange(proj);
-        }}
+        onChange={handleChange}
         disabled={disabled || projects.length === 0}
         className="w-full rounded-xl border border-gray-800 bg-gray-900 px-4 py-3 text-sm text-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
@@ -147,11 +169,12 @@ function ProjectSelector({
       )}
     </div>
   );
-}
+});
 
 // ─── 원문 / 번역 표시 영역 (단순화) ────────────────────────
+// Memo: Prevents re-render when text hasn't changed during live updates
 
-function TranscriptionPanel({
+const TranscriptionPanel = memo(function TranscriptionPanel({
   label,
   lang,
   text,
@@ -181,11 +204,12 @@ function TranscriptionPanel({
       </div>
     </div>
   );
-}
+});
 
 // ─── 해석 기록 항목 ────────────────────────────────────────
+// Memo: List items only re-render if their own data changes, not when new items are added
 
-function InterpretationItem({
+const InterpretationItem = memo(function InterpretationItem({
   item,
   sourceLang,
 }: {
@@ -225,7 +249,7 @@ function InterpretationItem({
       <p className="text-sm text-indigo-300">{item.translatedText}</p>
     </div>
   );
-}
+});
 
 // ─── 메인 페이지 ───────────────────────────────────────────
 
@@ -293,14 +317,15 @@ export default function LivePage() {
       return;
     }
 
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from("projects")
       .select("*")
       .eq("user_id", session.user.id)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .returns<Database["public"]["Tables"]["projects"]["Row"][]>();
 
     if (data) {
-      const mapped: Project[] = data.map((row: any) => ({
+      const mapped: Project[] = data.map((row) => ({
         id: row.id,
         userId: row.user_id,
         name: row.name,
@@ -308,7 +333,7 @@ export default function LivePage() {
         password: row.password,
         sourceLang: row.source_lang as Project["sourceLang"],
         targetLang: row.target_lang as Project["targetLang"],
-        targetLangs: (row.target_langs as string[]) || [row.target_lang],
+        targetLangs: row.target_langs || [row.target_lang],
         status: row.status as Project["status"],
         createdAt: row.created_at,
       }));
@@ -337,11 +362,11 @@ export default function LivePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from("users")
         .select("soniox_api_key")
         .eq("id", user.id)
-        .single();
+        .single<Pick<Database["public"]["Tables"]["users"]["Row"], "soniox_api_key">>();
 
       setHasApiKey(!!data?.soniox_api_key);
     };
@@ -485,7 +510,7 @@ export default function LivePage() {
     // Soniox 스트리밍 시작
     const targetLangs = selectedProject.targetLangs?.length
       ? selectedProject.targetLangs
-      : [selectedProject.targetLang];
+      : [selectedProject.targetLang ?? "en"];
     const targetLang = targetLangs[0];
 
     try {
@@ -580,17 +605,19 @@ export default function LivePage() {
       const supabase = createBrowserClient();
 
       // 해석 기록 저장
-      const interpsToSave = interpretations.map((item) => ({
+      type InterpretationInsert = Database["public"]["Tables"]["interpretations"]["Insert"];
+      const interpsToSave: InterpretationInsert[] = interpretations.map((item) => ({
         session_id: activeSessionId,
         original_text: item.originalText,
         translated_text: item.translatedText,
-        target_language: item.targetLanguage,
+        target_language: item.targetLanguage || null,
         is_final: item.isFinal,
         sequence: item.sequence,
       }));
 
-      const { error: interpError } = await (supabase as any)
+      const { error: interpError } = await supabase
         .from("interpretations")
+        // @ts-expect-error - Supabase client type inference issue with Insert type
         .insert(interpsToSave);
 
       if (interpError) {
@@ -734,7 +761,7 @@ export default function LivePage() {
               </p>
               <a
                 href="/settings"
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl bg-amber-600 hover:bg-amber-500 text-white transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl bg-amber-600 hover:bg-amber-500 text-white transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-amber-500"
               >
                 설정으로 이동
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -753,7 +780,7 @@ export default function LivePage() {
           {preselectedProjectId && (
             <Link
               href="/projects"
-              className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-500 hover:text-white transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-500 hover:text-white transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -790,7 +817,7 @@ export default function LivePage() {
           </p>
           <Link
             href="/projects"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             프로젝트 만들기
           </Link>
@@ -838,12 +865,13 @@ export default function LivePage() {
               <button
                 onClick={startRecording}
                 disabled={!canStart || creatingSession}
-                className="group relative w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 disabled:from-gray-700 disabled:to-gray-800 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-indigo-500/50 disabled:shadow-none flex items-center justify-center"
+                aria-label="통역 시작"
+                className="group relative w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 disabled:from-gray-700 disabled:to-gray-800 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-indigo-500/50 disabled:shadow-none flex items-center justify-center focus:outline-none focus:ring-4 focus:ring-indigo-500/50"
               >
                 {creatingSession ? (
-                  <div className="w-6 h-6 rounded-full border-3 border-white border-t-transparent animate-spin" />
+                  <div className="w-6 h-6 rounded-full border-3 border-white border-t-transparent animate-spin" aria-hidden="true" />
                 ) : (
-                  <svg className="w-10 h-10 text-white group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-10 h-10 text-white group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
                   </svg>
                 )}
@@ -853,9 +881,10 @@ export default function LivePage() {
             {recordingStatus === "recording" && (
               <button
                 onClick={pauseRecording}
-                className="group relative w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-amber-500 hover:to-amber-600 transition-all duration-300 shadow-lg shadow-emerald-500/50 hover:shadow-amber-500/50 flex items-center justify-center animate-pulse"
+                aria-label="통역 일시정지"
+                className="group relative w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-amber-500 hover:to-amber-600 transition-all duration-300 shadow-lg shadow-emerald-500/50 hover:shadow-amber-500/50 flex items-center justify-center animate-pulse focus:outline-none focus:ring-4 focus:ring-emerald-500/50"
               >
-                <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
               </button>
@@ -864,9 +893,10 @@ export default function LivePage() {
             {recordingStatus === "paused" && (
               <button
                 onClick={resumeRecording}
-                className="group relative w-24 h-24 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 hover:from-emerald-500 hover:to-emerald-600 transition-all duration-300 shadow-lg shadow-amber-500/50 hover:shadow-emerald-500/50 flex items-center justify-center"
+                aria-label="통역 재개"
+                className="group relative w-24 h-24 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 hover:from-emerald-500 hover:to-emerald-600 transition-all duration-300 shadow-lg shadow-amber-500/50 hover:shadow-emerald-500/50 flex items-center justify-center focus:outline-none focus:ring-4 focus:ring-amber-500/50"
               >
-                <svg className="w-10 h-10 text-white group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-10 h-10 text-white group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
                 </svg>
               </button>
@@ -887,9 +917,10 @@ export default function LivePage() {
             {(recordingStatus === "recording" || recordingStatus === "paused") && (
               <button
                 onClick={stopRecording}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-400 hover:text-white bg-gray-800/50 hover:bg-gray-800 rounded-xl transition-colors"
+                aria-label="통역 중지"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-400 hover:text-white bg-gray-800/50 hover:bg-gray-800 rounded-xl transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                <span className="w-2 h-2 rounded bg-current" />
+                <span className="w-2 h-2 rounded bg-current" aria-hidden="true" />
                 중지
               </button>
             )}
@@ -899,12 +930,13 @@ export default function LivePage() {
               <button
                 onClick={saveSession}
                 disabled={!canSave}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                aria-label="세션 저장"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 {saving ? (
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" aria-hidden="true" />
                 ) : (
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 )}
@@ -962,8 +994,9 @@ export default function LivePage() {
           <button
             type="button"
             onClick={() => setAudienceShareOpen((prev) => !prev)}
-            className="w-full flex items-center justify-between px-6 py-4 text-left transition-colors hover:bg-gray-800/30"
+            className="w-full flex items-center justify-between px-6 py-4 text-left transition-colors hover:bg-gray-800/30 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-inset"
             aria-expanded={audienceShareOpen}
+            aria-label="청중과 공유 섹션 열기"
           >
             <div className="flex items-center gap-3">
               <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

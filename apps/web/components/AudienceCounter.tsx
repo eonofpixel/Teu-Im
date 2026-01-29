@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo, useMemo } from "react";
 import type { AudiencePresenceState } from "@/hooks/useAudiencePresence";
 
 // ─── Language label map (mirrors audience page convention) ───────────────────
@@ -23,12 +23,13 @@ function getLangLabel(code: string): string {
 }
 
 // ─── Animated number display ─────────────────────────────────────────────────
+// Memo: Prevent re-render of number component when parent updates
 
 /**
  * Smoothly interpolates from the previous number to the new target
  * using requestAnimationFrame. Runs a short animation on each change.
  */
-function AnimatedNumber({ value, className }: { value: number; className?: string }) {
+const AnimatedNumber = memo(function AnimatedNumber({ value, className }: { value: number; className?: string }) {
   const [displayed, setDisplayed] = useState(value);
   const animFrameRef = useRef<number | null>(null);
   const startRef = useRef({ from: value, to: value, startTime: 0 });
@@ -78,11 +79,12 @@ function AnimatedNumber({ value, className }: { value: number; className?: strin
   }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <span className={className}>{displayed}</span>;
-}
+});
 
 // ─── Language pill ───────────────────────────────────────────────────────────
+// Memo: Individual pills only re-render when their count changes
 
-function LanguagePill({ code, count }: { code: string; count: number }) {
+const LanguagePill = memo(function LanguagePill({ code, count }: { code: string; count: number }) {
   if (code === "unknown") return null;
 
   return (
@@ -94,7 +96,7 @@ function LanguagePill({ code, count }: { code: string; count: number }) {
       />
     </div>
   );
-}
+});
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -111,17 +113,20 @@ export interface AudienceCounterProps {
  *
  * Intended for use on the presenter's live dashboard page.
  */
-export function AudienceCounter({ presence, visible = true }: AudienceCounterProps) {
-  if (!visible) return null;
-
+export const AudienceCounter = memo(function AudienceCounter({ presence, visible = true }: AudienceCounterProps) {
   const { totalCount, byLanguage } = presence;
 
-  // Sort language entries by count descending for visual hierarchy
-  const sortedLanguages = Object.entries(byLanguage)
-    .filter(([code]) => code !== "unknown")
-    .sort((a, b) => b[1] - a[1]);
+  // Memo: Only recalculate sorted languages when byLanguage changes
+  const sortedLanguages = useMemo(() =>
+    Object.entries(byLanguage)
+      .filter(([code]) => code !== "unknown")
+      .sort((a, b) => b[1] - a[1]),
+    [byLanguage]
+  );
 
   const unknownCount = byLanguage["unknown"] ?? 0;
+
+  if (!visible) return null;
 
   return (
     <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
@@ -186,4 +191,4 @@ export function AudienceCounter({ presence, visible = true }: AudienceCounterPro
       )}
     </div>
   );
-}
+});

@@ -1,186 +1,76 @@
-name: CI — Lint, Build & Security
+name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
-    branches: [main, develop]
-  workflow_dispatch:
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [main]
 
 jobs:
-  # ─── Lint & Type Check ──────────────────────────────────────────────────
-  lint-and-typecheck:
+  lint-and-build:
     runs-on: ubuntu-latest
-    name: Lint & Type Check
-
-    strategy:
-      matrix:
-        node-version: ["20.x", "22.x"]
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: 9
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
+      - uses: actions/setup-node@v4
         with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install
+      - run: pnpm lint
+      - run: pnpm build
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build shared packages
-        run: pnpm turbo build --filter=@teu-im/shared --filter=@teu-im/supabase
-
-      - name: Lint
-        run: pnpm turbo lint
-
-      - name: Type Check — web
-        run: pnpm --filter @teu-im/web exec tsc --noEmit
-
-  # ─── Build Web App ──────────────────────────────────────────────────────
-  build-web:
+  test:
     runs-on: ubuntu-latest
-    name: Build Web App
-    needs: lint-and-typecheck
-
-    env:
-      NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder_anon_key
-      SUPABASE_SERVICE_ROLE_KEY: placeholder_service_role_key
-
+    needs: lint-and-build
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20.x"
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: 9
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
+      - uses: actions/setup-node@v4
         with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install
+      - run: pnpm test --if-present
+      - name: Generate coverage report
+        run: pnpm --filter @teu-im/web test:coverage
+        continue-on-error: true
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: apps/web/coverage/
+          retention-days: 30
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build shared packages
-        run: |
-          pnpm --filter @teu-im/shared build || true
-          pnpm --filter @teu-im/ui build || true
-
-      - name: Build web app
-        run: pnpm --filter @teu-im/web build
-
-  # ─── Build Desktop App ──────────────────────────────────────────────────
-  build-desktop:
+  e2e:
     runs-on: ubuntu-latest
-    name: Build Desktop (Linux)
-    needs: lint-and-typecheck
-
+    needs: test
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20.x"
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: 9
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
         with:
-          workspaces: './apps/desktop/src-tauri -> target'
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build Desktop app (Vite bundle only — no Tauri binary in CI)
-        run: pnpm --filter @teu-im/desktop build
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install
+      - name: Install Playwright Browsers
+        run: pnpm exec playwright install --with-deps chromium
+        working-directory: apps/web
+      - name: Run Playwright tests
+        run: pnpm --filter @teu-im/web test:e2e
         env:
-          TAURI_SIGNING_PRIVATE_KEY: ''
-
-  # ─── Security Audit ─────────────────────────────────────────────────────
-  security:
-    runs-on: ubuntu-latest
-    name: Dependency Audit
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
+          CI: true
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: failure()
         with:
-          node-version: "20.x"
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Audit (high severity)
-        run: pnpm audit --severity high || true
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 30

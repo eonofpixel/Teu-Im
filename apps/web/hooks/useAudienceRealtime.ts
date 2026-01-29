@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type { Interpretation } from "@teu-im/shared";
 import { createClient } from "@/lib/supabase/client";
+import { captureError, captureMessage } from "@/lib/error-tracking";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -142,6 +143,9 @@ export function useAudienceRealtime({
 
   const [error, setError] = useState<Error | null>(null);
 
+  /** Tracks the number of reconnection attempts for exponential backoff */
+  const [retryCount, setRetryCount] = useState<number>(0);
+
   // ─── Refs ────────────────────────────────────────────────────────────────
 
   /** Holds the active channel so the cleanup function can unsubscribe */
@@ -157,7 +161,7 @@ export function useAudienceRealtime({
 
   // ─── Derived: language-filtered & audience-shaped interpretations ────────
 
-  const interpretations = useCallback((): Interpretation[] => {
+  const interpretations = useMemo((): Interpretation[] => {
     let filtered = allInterpretations;
 
     // Client-side language filter
@@ -249,6 +253,7 @@ export function useAudienceRealtime({
           case "SUBSCRIBED":
             setConnectionStatus("connected");
             setError(null);
+            setRetryCount(0); // Reset retry count on successful connection
             // Clear any pending reconnect timer on successful connection
             if (reconnectTimerRef.current) {
               clearTimeout(reconnectTimerRef.current);
@@ -258,32 +263,69 @@ export function useAudienceRealtime({
 
           case "CHANNEL_ERROR":
             setConnectionStatus("error");
-            setError(
-              new Error("Realtime channel error. Attempting reconnect...")
-            );
-            // Schedule a reconnect by unsub + letting the effect re-run
+            const channelError = new Error("Realtime channel error. Attempting reconnect...");
+            setError(channelError);
+
+            // Track channel error
+            captureError(channelError, {
+              component: "useAudienceRealtime",
+              action: "realtime_channel_error",
+              extra: {
+                sessionId,
+                targetLanguage,
+                retryCount,
+              },
+            });
+
+            // Schedule a reconnect with exponential backoff
             if (!reconnectTimerRef.current) {
+              // Calculate exponential backoff: 1s, 2s, 4s, 8s (max)
+              const backoffMs = Math.min(1000 * Math.pow(2, retryCount), 8000);
+
               reconnectTimerRef.current = setTimeout(() => {
                 reconnectTimerRef.current = null;
                 if (channelRef.current) {
                   channelRef.current.unsubscribe();
                   channelRef.current = null;
                 }
-                // Trigger re-subscription by resetting state
+                // Increment retry count and trigger re-subscription
+                setRetryCount((prev) => prev + 1);
                 setConnectionStatus("connecting");
                 setError(null);
-              }, 3000);
+              }, backoffMs);
             }
             break;
 
           case "TIMED_OUT":
             setConnectionStatus("disconnected");
-            setError(new Error("Connection timed out. Waiting for reconnect..."));
+            const timeoutError = new Error("Connection timed out. Waiting for reconnect...");
+            setError(timeoutError);
+
+            // Track timeout event
+            captureMessage("Realtime connection timed out", {
+              component: "useAudienceRealtime",
+              action: "realtime_timeout",
+              extra: {
+                sessionId,
+                targetLanguage,
+              },
+            });
             break;
 
           case "CLOSED":
             setConnectionStatus("disconnected");
-            setError(new Error("Realtime connection closed."));
+            const closedError = new Error("Realtime connection closed.");
+            setError(closedError);
+
+            // Track connection closed event
+            captureMessage("Realtime connection closed", {
+              component: "useAudienceRealtime",
+              action: "realtime_closed",
+              extra: {
+                sessionId,
+                targetLanguage,
+              },
+            });
             break;
 
           default:
@@ -304,10 +346,13 @@ export function useAudienceRealtime({
         channelRef.current = null;
       }
     };
+    // Note: retryCount and targetLanguage are intentionally not in deps
+    // They are captured for logging context only and should not trigger re-subscription
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, sessionEnded]);
 
   return {
-    interpretations: interpretations(),
+    interpretations,
     connectionStatus,
     error,
   };

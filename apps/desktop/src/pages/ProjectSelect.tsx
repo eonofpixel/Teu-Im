@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getProjects } from "@teu-im/supabase";
 import { Project } from "@teu-im/shared";
 import { useAppStore } from "@/stores/appStore";
+import { supabase } from "@/lib/supabase";
 
 export function ProjectSelect() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -10,7 +11,6 @@ export function ProjectSelect() {
 
   const user = useAppStore((state) => state.user)!;
   const setCurrentProject = useAppStore((state) => state.setCurrentProject);
-  const setUser = useAppStore((state) => state.setUser);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -27,8 +27,9 @@ export function ProjectSelect() {
     fetchProjects();
   }, [user.id]);
 
-  const handleLogout = () => {
-    setUser(null);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    // Auth state listener will handle the reset
   };
 
   const handleSelectProject = (project: Project) => {
@@ -36,13 +37,32 @@ export function ProjectSelect() {
   };
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col bg-gray-950">
       {/* Header */}
-      <header className="flex items-center justify-between px-8 py-6 border-b border-gray-800">
-        <h1 className="text-2xl font-bold text-white">프로젝트 선택</h1>
+      <header className="flex items-center justify-between px-8 py-6 border-b border-gray-800 bg-gray-900/40 backdrop-blur-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center shadow-lg shadow-indigo-900/40">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-white"
+            >
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">프로젝트 선택</h1>
+        </div>
         <button
           onClick={handleLogout}
-          className="text-base text-gray-400 hover:text-white transition-colors px-4 py-2 hover:bg-gray-800 rounded-lg min-h-[44px]"
+          className="text-base text-gray-400 hover:text-white transition-colors px-4 py-2 hover:bg-gray-800/60 rounded-xl min-h-[44px]"
         >
           로그아웃
         </button>
@@ -57,13 +77,13 @@ export function ProjectSelect() {
         )}
 
         {error && (
-          <div className="max-w-md mx-auto text-center mt-24">
-            <div className="bg-red-900/20 border border-red-800/40 rounded-xl px-6 py-5 mb-6">
+          <div className="max-w-md mx-auto text-center mt-24 animate-fade-in">
+            <div className="bg-red-900/20 border border-red-800/40 rounded-2xl px-6 py-5 mb-6">
               <p className="text-red-300 text-lg">{error}</p>
             </div>
             <button
               onClick={() => window.location.reload()}
-              className="text-indigo-400 hover:text-indigo-300 text-base font-medium transition-colors px-6 py-3 hover:bg-gray-800 rounded-lg min-h-[44px]"
+              className="text-indigo-400 hover:text-indigo-300 text-base font-medium transition-colors px-6 py-3 hover:bg-gray-800/60 rounded-xl min-h-[44px]"
             >
               다시 시도
             </button>
@@ -78,12 +98,12 @@ export function ProjectSelect() {
         )}
 
         {!loading && !error && projects.length > 0 && (
-          <div className="max-w-2xl mx-auto space-y-4">
+          <div className="max-w-2xl mx-auto space-y-4 animate-fade-in">
             {projects.map((project) => (
               <button
                 key={project.id}
                 onClick={() => handleSelectProject(project)}
-                className="w-full text-left bg-gray-800 hover:bg-gray-750 border border-gray-700 hover:border-indigo-600/50 rounded-2xl px-7 py-6 transition-all group min-h-[88px]"
+                className="w-full text-left bg-gray-800/40 hover:bg-gray-800 border border-gray-700/50 hover:border-indigo-600/50 rounded-2xl px-7 py-6 transition-all group min-h-[88px] hover:shadow-lg hover:shadow-indigo-900/10"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
