@@ -73,6 +73,21 @@ export async function getProject(projectId: string): Promise<Project | null> {
 }
 
 export async function createSession(projectId: string): Promise<Session> {
+  // Check for existing active session first
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: existing } = await (supabase as any)
+    .from("sessions")
+    .select("*")
+    .eq("project_id", projectId)
+    .eq("status", "active")
+    .single();
+
+  if (existing) {
+    // Return existing active session instead of creating duplicate
+    return toSession(existing as SessionRow);
+  }
+
+  // Create new session
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from("sessions")
