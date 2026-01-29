@@ -6,8 +6,9 @@ let cachedClient: ReturnType<typeof createBrowserClient<Database>> | null = null
 export function getSupabaseBrowserClient() {
   if (cachedClient) return cachedClient;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  // Trim to remove any trailing newlines from environment variables
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
   if (!supabaseUrl || !supabaseKey) {
     throw new Error(
@@ -21,8 +22,9 @@ export function getSupabaseBrowserClient() {
 
 // Non-singleton version for cases that need fresh client
 export function createSupabaseBrowserClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  // Trim to remove any trailing newlines from environment variables
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
   if (!supabaseUrl || !supabaseKey) {
     throw new Error(

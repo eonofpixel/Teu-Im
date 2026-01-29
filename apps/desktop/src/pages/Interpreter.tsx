@@ -15,7 +15,7 @@ import {
   resumeMultiLangSoniox,
 } from "@/lib/soniox";
 import { createSession, endSession } from "@teu-im/supabase";
-import QRCode from "qrcode";
+import { QRCodeSVG } from "qrcode.react";
 
 // Base URL for audience access
 const AUDIENCE_BASE_URL = "https://teu-im.vercel.app/audience";
@@ -67,23 +67,9 @@ interface ShareModalProps {
 }
 
 function ShareModal({ isOpen, onClose, code, password, projectName }: ShareModalProps) {
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const shareUrl = `${AUDIENCE_BASE_URL}/${code}?p=${password}`;
-
-  useEffect(() => {
-    if (isOpen && code) {
-      QRCode.toDataURL(shareUrl, {
-        width: 280,
-        margin: 2,
-        color: {
-          dark: '#ffffff',
-          light: '#00000000',
-        },
-      }).then(setQrDataUrl).catch(console.error);
-    }
-  }, [isOpen, code, shareUrl]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(shareUrl);
@@ -118,8 +104,14 @@ function ShareModal({ isOpen, onClose, code, password, projectName }: ShareModal
         {/* QR Code */}
         <div className="flex justify-center mb-6">
           <div className="bg-white p-4 rounded-2xl">
-            {qrDataUrl ? (
-              <img src={qrDataUrl} alt="QR Code" className="w-64 h-64" />
+            {code ? (
+              <QRCodeSVG
+                value={shareUrl}
+                size={256}
+                bgColor="#ffffff"
+                fgColor="#000000"
+                level="M"
+              />
             ) : (
               <div className="w-64 h-64 flex items-center justify-center">
                 <div className="w-8 h-8 border-2 border-gray-300 border-t-indigo-500 rounded-full animate-spin" />
