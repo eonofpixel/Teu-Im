@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { updateSession } from "./lib/supabase/middleware";
 
 const PROTECTED_PATHS = ["/projects", "/settings"];
 const AUTH_PATHS = ["/login", "/signup"];
@@ -147,8 +146,15 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Supabase 세션 갱신 (only for non-public routes)
-  const { session } = await updateSession(request, response);
+  // Dynamically import Supabase middleware to avoid Edge Runtime compatibility issues
+  let session = null;
+  try {
+    const { updateSession } = await import("./lib/supabase/middleware");
+    const result = await updateSession(request, response);
+    session = result.session;
+  } catch (error) {
+    console.error("Failed to update Supabase session:", error);
+  }
 
   // ── Route guards ──────────────────────────────────────────────────
 
