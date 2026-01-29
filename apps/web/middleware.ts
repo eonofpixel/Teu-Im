@@ -6,6 +6,14 @@ import { generalLimiter, authLimiter, tempKeyLimiter } from "./lib/rate-limit";
 const PROTECTED_PATHS = ["/projects", "/settings"];
 const AUTH_PATHS = ["/login", "/signup"];
 
+// Public API routes that don't need Supabase session
+const PUBLIC_API_PATHS = [
+  "/api/releases",
+  "/api/health",
+  "/api/audience",
+  "/api/join",
+];
+
 /**
  * Get allowed CORS origins based on environment
  * In production, only allow specific domains
@@ -161,7 +169,15 @@ export async function middleware(request: NextRequest) {
     response.headers.set("Access-Control-Allow-Credentials", "true");
   }
 
-  // Supabase 세션 갱신
+  // Check if this is a public API route that doesn't need Supabase
+  const isPublicApi = PUBLIC_API_PATHS.some((p) => pathname.startsWith(p));
+
+  // Skip Supabase session for public API routes
+  if (isPublicApi) {
+    return response;
+  }
+
+  // Supabase 세션 갱신 (only for non-public routes)
   const { session } = await updateSession(request, response);
 
   // ── Rate limiting for API routes ──────────────────────────────────
