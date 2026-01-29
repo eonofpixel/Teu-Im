@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { updateSession } from "./lib/supabase/middleware";
-import { generalLimiter, authLimiter, tempKeyLimiter } from "./lib/rate-limit";
 
 const PROTECTED_PATHS = ["/projects", "/settings"];
 const AUTH_PATHS = ["/login", "/signup"];
@@ -93,35 +92,6 @@ function getCSPHeader(supabaseUrl?: string): string {
     .join("; ");
 }
 
-function getApiLimiter(pathname: string) {
-  if (pathname.startsWith("/api/login") || pathname.startsWith("/api/signup")) {
-    return authLimiter;
-  }
-  if (pathname.startsWith("/api/soniox/temp-key")) {
-    return tempKeyLimiter;
-  }
-  if (pathname.startsWith("/api/")) {
-    return generalLimiter;
-  }
-  return null;
-}
-
-/**
- * Extract a client identifier for rate limiting.
- * Prefers authenticated user ID; falls back to IP from headers.
- */
-function getClientIdentifier(request: NextRequest, userId?: string): string {
-  if (userId) return `user:${userId}`;
-
-  // Standard headers set by reverse proxies / hosting platforms
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) return `ip:${forwarded.split(",")[0].trim()}`;
-
-  const realIp = request.headers.get("x-real-ip");
-  if (realIp) return `ip:${realIp}`;
-
-  return "ip:unknown";
-}
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -179,34 +149,6 @@ export async function middleware(request: NextRequest) {
 
   // Supabase 세션 갱신 (only for non-public routes)
   const { session } = await updateSession(request, response);
-
-  // ── Rate limiting for API routes ──────────────────────────────────
-  const limiter = getApiLimiter(pathname);
-  if (limiter) {
-    const identifier = getClientIdentifier(request, session?.user?.id);
-    const result = limiter.check(identifier);
-
-    // Attach rate-limit headers to all API responses
-    response.headers.set("X-RateLimit-Remaining", String(result.remaining));
-    response.headers.set("X-RateLimit-Reset", String(result.resetAt));
-
-    if (!result.allowed) {
-      return NextResponse.json(
-        { error: "요청 횟수를 초과했습니다. 잠시 후 다시 시도해주세요" },
-        {
-          status: 429,
-          headers: {
-            "X-RateLimit-Remaining": "0",
-            "X-RateLimit-Reset": String(result.resetAt),
-            "Retry-After": String(
-              Math.ceil((result.resetAt - Date.now()) / 1000)
-            ),
-            "Cache-Control": "no-store",
-          },
-        }
-      );
-    }
-  }
 
   // ── Route guards ──────────────────────────────────────────────────
 

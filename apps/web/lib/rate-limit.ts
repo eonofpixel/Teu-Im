@@ -37,15 +37,24 @@ export function createRateLimiter(config: RateLimiterConfig) {
   const { requests, window: windowMs } = config;
 
   // Periodic cleanup of expired entries (every 5 minutes)
-  if (typeof setInterval !== "undefined") {
-    setInterval(() => {
-      const now = Date.now();
-      for (const [key, entry] of store.entries()) {
-        if (entry.resetAt < now) {
-          store.delete(key);
+  // Only run in Node.js environment (not Edge Runtime)
+  if (typeof setInterval !== "undefined" && typeof process !== "undefined" && process.release?.name === "node") {
+    try {
+      const interval = setInterval(() => {
+        const now = Date.now();
+        for (const [key, entry] of store.entries()) {
+          if (entry.resetAt < now) {
+            store.delete(key);
+          }
         }
+      }, 300_000);
+      // Prevent keeping the process alive
+      if (typeof interval.unref === "function") {
+        interval.unref();
       }
-    }, 300_000).unref?.();
+    } catch {
+      // Ignore errors in Edge Runtime
+    }
   }
 
   return {
