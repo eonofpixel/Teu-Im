@@ -3,7 +3,7 @@ import { apiSuccess, apiError, ERRORS } from "@/lib/api-response";
 // ─── 타입 정의 ────────────────────────────────────────────
 
 interface ReleaseAsset {
-  platform: "macos-arm" | "macos-intel" | "windows" | "linux";
+  platform: "macos-arm" | "windows";
   filename: string;
   download_url: string;
   size_bytes: number;
@@ -37,23 +37,14 @@ interface GitHubRelease {
 function detectPlatform(filename: string): ReleaseAsset["platform"] | null {
   const lower = filename.toLowerCase();
 
-  if (lower.includes("macos") || lower.includes("darwin")) {
-    if (lower.includes("arm") || lower.includes("aarch64") || lower.includes("m1")) {
-      return "macos-arm";
-    }
-    if (lower.includes("intel") || lower.includes("x86_64") || lower.includes("x64")) {
-      return "macos-intel";
-    }
-    // 기본값: macOS ARM (Apple Silicon 우선)
+  // macOS Apple Silicon only (aarch64)
+  if (lower.includes("aarch64") && (lower.includes("macos") || lower.includes("darwin") || lower.endsWith(".dmg"))) {
     return "macos-arm";
   }
 
-  if (lower.includes("windows") || lower.includes("win32") || lower.includes("win64") || lower.endsWith(".exe") || lower.endsWith(".msi")) {
+  // Windows .exe only (exclude .msi)
+  if (lower.endsWith(".exe") || lower.includes("setup.exe")) {
     return "windows";
-  }
-
-  if (lower.includes("linux") || lower.endsWith(".deb") || lower.endsWith(".rpm") || lower.endsWith(".appimage")) {
-    return "linux";
   }
 
   return null;
@@ -61,9 +52,7 @@ function detectPlatform(filename: string): ReleaseAsset["platform"] | null {
 
 // ─── 다운로드 파일 필터 ───────────────────────────────────
 
-const VALID_EXTENSIONS = [
-  ".dmg", ".pkg", ".exe", ".msi", ".deb", ".rpm", ".appimage", ".tar.gz", ".zip",
-];
+const VALID_EXTENSIONS = [".dmg", ".exe"];
 
 function isDownloadable(filename: string): boolean {
   const lower = filename.toLowerCase();
@@ -192,16 +181,17 @@ export async function GET() {
       .filter((a) => isDownloadable(a.name))
       .map((a) => {
         const platform = detectPlatform(a.name);
+        if (!platform) return null;
         const checksum = checksumMap.get(a.name);
         return {
-          platform: platform ?? ("linux" as const),
+          platform,
           filename: a.name,
           download_url: a.browser_download_url,
           size_bytes: a.size,
           ...(checksum && { checksum }),
         };
       })
-      .filter((a) => a.platform !== null);
+      .filter((a): a is ReleaseAsset => a !== null);
 
     const release: Release = {
       version: github.tag_name.replace(/^v/, ""),

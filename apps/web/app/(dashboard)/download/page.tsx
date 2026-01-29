@@ -11,7 +11,7 @@ interface ReleaseAsset {
   filename: string;
   download_url: string;
   size_bytes: number;
-  checksum?: string; // SHA256 해시
+  checksum?: string;
 }
 
 interface Release {
@@ -21,8 +21,8 @@ interface Release {
   release_notes: string;
 }
 
-type PlatformId = "macos-arm" | "macos-intel" | "windows" | "linux";
-type DetectedPlatform = "macos" | "windows" | "linux";
+type PlatformId = "macos-arm" | "windows";
+type DetectedPlatform = "macos" | "windows" | "other";
 
 // ─── 아이콘 컴포넌트 ──────────────────────────────────────
 
@@ -38,14 +38,6 @@ function WindowsIcon({ size = "w-7 h-7" }: { size?: string }) {
   return (
     <svg className={`${size} text-gray-300`} fill="currentColor" viewBox="0 0 24 24">
       <path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z" />
-    </svg>
-  );
-}
-
-function LinuxIcon({ size = "w-7 h-7" }: { size?: string }) {
-  return (
-    <svg className={`${size} text-gray-300`} fill="currentColor" viewBox="0 0 24 24">
-      <path d="M12 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-3.5 5C7.6 7 6 8.6 6 10.5V14h2v-3.5C8 9.7 9.7 8 11.5 8h1C14.3 8 16 9.7 16 11.5V14h2v-3.5C18 8.6 16.4 7 14.5 7h-6zM4 16v2h16v-2H4z" />
     </svg>
   );
 }
@@ -82,7 +74,7 @@ function StarIcon() {
   );
 }
 
-// ─── SHA256 체크섬 배지 (접기/펼치기 + 복사) ─────────────────
+// ─── SHA256 체크섬 배지 ─────────────────────────────────────
 
 function ChecksumBadge({ checksum }: { checksum: string }) {
   const [expanded, setExpanded] = useState(false);
@@ -162,51 +154,32 @@ function detectUserPlatform(): DetectedPlatform {
     return "macos";
   }
   if (platform.includes("win")) return "windows";
-  if (platform.includes("linux")) return "linux";
-  return "macos";
+  return "other";
 }
 
 // ─── 플랫폼 메타 정의 ─────────────────────────────────────
 
 const PLATFORM_META: Record<
   PlatformId,
-  { name: string; subtitle: string; note?: string; requirements: string[] }
+  { name: string; subtitle: string; requirements: string[] }
 > = {
   "macos-arm": {
-    name: "macOS ARM",
-    subtitle: "Apple Silicon (M1/M2/M3)",
-    note: "M1 이후 출시된 Mac에 적합",
-    requirements: ["macOS 12 (Monterey) 이상", "Apple M1 칩 이상"],
-  },
-  "macos-intel": {
-    name: "macOS Intel",
-    subtitle: "Intel 기반 Mac",
-    note: "Intel 프로세서를 사용하는 기존 Mac에 적합",
-    requirements: ["macOS 12 (Monterey) 이상", "Intel Core i5 이상"],
+    name: "macOS",
+    subtitle: "Apple Silicon (M1/M2/M3/M4)",
+    requirements: ["macOS 12 (Monterey) 이상", "Apple Silicon Mac"],
   },
   windows: {
     name: "Windows",
     subtitle: "64-bit (x86_64)",
     requirements: ["Windows 10 이상 (64비트)", "4GB 이상 RAM"],
   },
-  linux: {
-    name: "Linux",
-    subtitle: "64-bit (x86_64)",
-    requirements: ["Ubuntu 20.04 / Debian 11 이상", "4GB 이상 RAM"],
-  },
 };
 
-const PLATFORM_ORDER: PlatformId[] = [
-  "macos-arm",
-  "macos-intel",
-  "windows",
-  "linux",
-];
+const PLATFORM_ORDER: PlatformId[] = ["macos-arm", "windows"];
 
 function PlatformIcon({ id }: { id: PlatformId }) {
-  if (id === "macos-arm" || id === "macos-intel") return <AppleIcon />;
-  if (id === "windows") return <WindowsIcon />;
-  return <LinuxIcon />;
+  if (id === "macos-arm") return <AppleIcon />;
+  return <WindowsIcon />;
 }
 
 // ─── 상수 ─────────────────────────────────────────────────
@@ -240,27 +213,22 @@ function PlatformCard({
   id,
   asset,
   isRecommended,
-  isHighlighted,
 }: {
   id: PlatformId;
   asset: ReleaseAsset | null;
   isRecommended: boolean;
-  isHighlighted?: boolean;
 }) {
   const meta = PLATFORM_META[id];
-  const highlighted = isRecommended || isHighlighted;
 
   return (
     <div
       className={`relative rounded-xl border bg-gray-900 p-5 flex flex-col gap-3 transition-all duration-200 ${
         isRecommended
           ? "border-indigo-600/60 shadow-lg shadow-indigo-500/8 hover:border-indigo-500"
-          : highlighted
-            ? "border-indigo-600/30 shadow-md shadow-indigo-500/5 hover:border-indigo-600/50"
-            : "border-gray-800 hover:border-gray-700 hover:shadow-lg hover:shadow-indigo-500/5"
+          : "border-gray-800 hover:border-gray-700 hover:shadow-lg hover:shadow-indigo-500/5"
       }`}
     >
-      {/* 추천 배지 — macOS는 배지 표시하지 않음 */}
+      {/* 추천 배지 */}
       {isRecommended && (
         <div className="absolute -top-px left-4 -translate-y-1/2">
           <span className="inline-flex items-center gap-1 bg-indigo-600 px-2.5 py-0.5 rounded-full text-xs font-semibold text-white">
@@ -274,7 +242,7 @@ function PlatformCard({
       <div className="flex items-start gap-3.5">
         <div
           className={`flex h-12 w-12 items-center justify-center rounded-xl flex-shrink-0 ${
-            highlighted ? "bg-indigo-600/15 ring-1 ring-indigo-600/30" : "bg-gray-800"
+            isRecommended ? "bg-indigo-600/15 ring-1 ring-indigo-600/30" : "bg-gray-800"
           }`}
         >
           <PlatformIcon id={id} />
@@ -282,9 +250,6 @@ function PlatformCard({
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-semibold text-white">{meta.name}</h3>
           <p className="text-xs text-gray-400 mt-0.5">{meta.subtitle}</p>
-          {meta.note && (
-            <p className="text-xs text-gray-600 mt-1">{meta.note}</p>
-          )}
         </div>
       </div>
 
@@ -317,7 +282,7 @@ function PlatformCard({
           href={asset.download_url}
           download={asset.filename}
           className={`mt-auto inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-all duration-150 ${
-            highlighted
+            isRecommended
               ? "bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-600/25"
               : "bg-gray-800 hover:bg-gray-700"
           }`}
@@ -335,7 +300,7 @@ function PlatformCard({
   );
 }
 
-// ─── 릴리스 노트 (접기/펼치기) ────────────────────────────
+// ─── 릴리스 노트 ────────────────────────────────────────────
 
 function ReleaseNotesSection({ notes }: { notes: string }) {
   const [expanded, setExpanded] = useState(false);
@@ -405,20 +370,15 @@ function InstallStepItem({
 function LoadingSkeleton() {
   return (
     <div className="max-w-4xl">
-      {/* 헤더 스켈레톤 */}
       <div className="mb-6 space-y-2">
         <div className="h-7 w-48 bg-gray-800 rounded-lg animate-pulse" />
         <div className="h-4 w-72 bg-gray-800/60 rounded animate-pulse" />
       </div>
-
-      {/* 버전 배지 스켈레톤 */}
       <div className="mb-8">
         <div className="h-8 w-36 bg-gray-800 rounded-full animate-pulse" />
       </div>
-
-      {/* 카드 스켈레톤 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
-        {[0, 1, 2, 3].map((i) => (
+        {[0, 1].map((i) => (
           <div key={i} className="rounded-xl border border-gray-800 bg-gray-900 p-5 space-y-4">
             <div className="flex gap-3.5">
               <div className="h-12 w-12 bg-gray-800 rounded-xl animate-pulse flex-shrink-0" />
@@ -440,7 +400,7 @@ function LoadingSkeleton() {
   );
 }
 
-// ─── 빈 상태 (릴리스 없음) ────────────────────────────────
+// ─── 빈 상태 ────────────────────────────────────────────
 
 function EmptyReleaseState() {
   return (
@@ -452,7 +412,7 @@ function EmptyReleaseState() {
       </div>
       <h3 className="text-sm font-semibold text-white mb-1">아직 릴리스가 없습니다</h3>
       <p className="text-xs text-gray-500 max-w-xs mx-auto">
-        첫 번째 릴리스가 준비되면 여기에 다운로드 파일이 등장하겠습니다.
+        첫 번째 릴리스가 준비되면 여기에 다운로드 파일이 등장합니다.
         지금은 웹 버전을 사용해 보세요.
       </p>
     </div>
@@ -512,10 +472,8 @@ export default function DownloadPage() {
     fetchRelease();
   }, []);
 
-  // 로딩 중
   if (loading) return <LoadingSkeleton />;
 
-  // 오류 상태
   if (error) {
     return (
       <div className="max-w-4xl">
@@ -526,8 +484,6 @@ export default function DownloadPage() {
           </p>
         </div>
         <ErrorState onRetry={fetchRelease} />
-
-        {/* 웹 버전 안내 — 오류 시에도 표시 */}
         <div className="rounded-xl border border-gray-800 bg-gray-900 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3.5">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-800 flex-shrink-0">
@@ -552,7 +508,6 @@ export default function DownloadPage() {
     );
   }
 
-  // 릴리스 없음
   if (!release) {
     return (
       <div className="max-w-4xl">
@@ -563,8 +518,6 @@ export default function DownloadPage() {
           </p>
         </div>
         <EmptyReleaseState />
-
-        {/* 웹 버전 안내 */}
         <div className="rounded-xl border border-gray-800 bg-gray-900 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3.5">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-800 flex-shrink-0">
@@ -592,7 +545,9 @@ export default function DownloadPage() {
   // asset을 플랫폼별로 맵핑
   const assetMap = new Map<PlatformId, ReleaseAsset>();
   for (const asset of release.assets) {
-    assetMap.set(asset.platform, asset);
+    if (asset.platform === "macos-arm" || asset.platform === "windows") {
+      assetMap.set(asset.platform, asset);
+    }
   }
 
   return (
@@ -619,15 +574,9 @@ export default function DownloadPage() {
       {/* 플랫폼별 다운로드 카드 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
         {PLATFORM_ORDER.map((id) => {
-          const isMacOSCard = id === "macos-arm" || id === "macos-intel";
-          // macOS 사용자: 두 카드 모두 하이라이트 (권장 배지 없음)
-          // Windows / Linux: 단일 권장 배지
           const isRecommended =
-            !isMacOSCard && (
-              (userPlatform === "windows" && id === "windows") ||
-              (userPlatform === "linux" && id === "linux")
-            );
-          const isHighlighted = isMacOSCard && userPlatform === "macos";
+            (userPlatform === "macos" && id === "macos-arm") ||
+            (userPlatform === "windows" && id === "windows");
 
           return (
             <PlatformCard
@@ -635,18 +584,17 @@ export default function DownloadPage() {
               id={id}
               asset={assetMap.get(id) ?? null}
               isRecommended={isRecommended}
-              isHighlighted={isHighlighted}
             />
           );
         })}
       </div>
 
-      {/* 릴리스 노트 (접기/펼치기) */}
+      {/* 릴리스 노트 */}
       <div className="mb-6">
         <ReleaseNotesSection notes={release.release_notes} />
       </div>
 
-      {/* 웹 버전 안내 sectoin */}
+      {/* 웹 버전 안내 */}
       <div className="rounded-xl border border-gray-800 bg-gray-900 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-start gap-3.5">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-800 flex-shrink-0">
@@ -689,7 +637,7 @@ export default function DownloadPage() {
       {/* 전체 릴리스 목록 링크 */}
       <div className="flex items-center justify-center">
         <a
-          href="https://github.com/teu-im/teu-im/releases"
+          href="https://github.com/eonofpixel/Teu-Im/releases"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-indigo-400 transition-colors"
