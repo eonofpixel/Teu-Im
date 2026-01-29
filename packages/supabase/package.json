@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
-    "@supabase/ssr": "^0.5.2",
+    "@supabase/ssr": "^0.8.0",
     "@teu-im/shared": "workspace:*"
   },
   "devDependencies": {
