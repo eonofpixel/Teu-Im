@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 
 // ─── 타입 정의 ────────────────────────────────────────────
@@ -55,6 +56,96 @@ function GlobeIcon() {
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9 12a9 9 0 0018 0M9 12c0 1.657 1.343 3 3 3s3-1.343 3-3-1.343-3-3-3-3 1.343-3 3zm0 0v-4a3 3 0 016 0v4" />
     </svg>
+  );
+}
+
+function UsersIcon() {
+  return (
+    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+    </svg>
+  );
+}
+
+function QrCodeIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 6.75h.75v.75h-.75v-.75zM6.75 16.5h.75v.75h-.75v-.75zM16.5 6.75h.75v.75h-.75v-.75zM13.5 13.5h.75v.75h-.75v-.75zM13.5 19.5h.75v.75h-.75v-.75zM19.5 13.5h.75v.75h-.75v-.75zM19.5 19.5h.75v.75h-.75v-.75zM16.5 16.5h.75v.75h-.75v-.75z" />
+    </svg>
+  );
+}
+
+// ─── 청중 참여 섹션 ──────────────────────────────────────────
+
+function AudienceJoinSection() {
+  const router = useRouter();
+  const [code, setCode] = useState("");
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const handleJoin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedCode = code.trim().toUpperCase();
+    if (!trimmedCode) return;
+
+    setIsNavigating(true);
+    router.push(`/audience/${trimmedCode}`);
+  };
+
+  return (
+    <div className="rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-indigo-600/10 to-purple-600/10 p-6 mb-8">
+      <div className="flex items-start gap-4 mb-5">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex-shrink-0">
+          <UsersIcon />
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold text-white mb-1">청중으로 참여하기</h2>
+          <p className="text-sm text-gray-400">
+            행사 코드를 입력하여 실시간 통역을 확인하세요
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={handleJoin} className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1">
+          <input
+            type="text"
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            placeholder="행사 코드 입력 (예: ABC123)"
+            maxLength={10}
+            className="w-full px-4 py-3 rounded-xl bg-gray-900/80 border border-gray-700 text-white text-center text-lg font-mono tracking-wider placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+            style={{ letterSpacing: '0.15em' }}
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={!code.trim() || isNavigating}
+          className="px-6 py-3 rounded-xl font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.98]"
+          style={{
+            background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+            boxShadow: "0 4px 15px rgba(99, 102, 241, 0.3)",
+          }}
+        >
+          {isNavigating ? "이동 중..." : "참여하기"}
+        </button>
+      </form>
+
+      <div className="mt-5 pt-5 border-t border-gray-800/50">
+        <div className="flex items-start gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-800/50 flex-shrink-0">
+            <QrCodeIcon />
+          </div>
+          <div>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              <span className="text-gray-300 font-medium">QR 코드로 참여:</span>{" "}
+              주최자가 공유한 QR 코드를 스캔하면 자동으로 이 페이지로 이동합니다.
+              행사장에서 QR 코드를 확인하세요.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -601,11 +692,17 @@ export default function DownloadPage() {
     fetchRelease();
   }, []);
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading) return (
+    <div className="max-w-4xl">
+      <AudienceJoinSection />
+      <LoadingSkeleton />
+    </div>
+  );
 
   if (error) {
     return (
       <div className="max-w-4xl">
+        <AudienceJoinSection />
         <div className="mb-6">
           <h1 className="text-xl font-bold text-white">다운로드</h1>
           <p className="text-sm text-gray-400 mt-1">
@@ -640,6 +737,7 @@ export default function DownloadPage() {
   if (!release) {
     return (
       <div className="max-w-4xl">
+        <AudienceJoinSection />
         <div className="mb-6">
           <h1 className="text-xl font-bold text-white">다운로드</h1>
           <p className="text-sm text-gray-400 mt-1">
@@ -681,11 +779,14 @@ export default function DownloadPage() {
 
   return (
     <div className="max-w-4xl">
+      {/* 청중 참여 섹션 */}
+      <AudienceJoinSection />
+
       {/* 페이지 헤더 */}
       <div className="mb-5">
-        <h1 className="text-xl font-bold text-white">다운로드</h1>
+        <h1 className="text-xl font-bold text-white">앱 다운로드</h1>
         <p className="text-sm text-gray-400 mt-1">
-          Teu-Im 데스크탑 앱을 다운로드하여 설치하세요
+          행사 주최자용 데스크탑 앱을 다운로드하세요
         </p>
       </div>
 
