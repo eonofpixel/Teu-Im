@@ -487,22 +487,8 @@ export function Interpreter() {
             />
           </div>
 
-          {/* Center: StatefulButton + Pause */}
+          {/* Center: StatefulButton */}
           <div className="flex items-center gap-4">
-            {/* Pause button — visible only when actively recording */}
-            {isRecording && !isPaused && (
-              <button
-                onClick={handlePause}
-                className="flex items-center gap-2 px-5 py-3 rounded-xl text-base font-semibold text-amber-300 bg-amber-900/30 border border-amber-800/40 hover:bg-amber-900/50 transition-all min-h-[52px]"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <rect x="6" y="4" width="4" height="16" rx="1" />
-                  <rect x="14" y="4" width="4" height="16" rx="1" />
-                </svg>
-                일시정지
-              </button>
-            )}
-
             <StatefulButton
               state={buttonState}
               onStart={handleStart}

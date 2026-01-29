@@ -17,6 +17,9 @@ export default defineConfig({
     host: true,
   },
 
+  // Tauri expects relative paths for assets
+  base: './',
+
   // Tauri expects dist/assets to be at the top level
   // https://tauri.app/guides/getting-started/prerequisites
   build: {
