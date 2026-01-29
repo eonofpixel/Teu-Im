@@ -129,9 +129,10 @@ function ActionMenu({
           e.stopPropagation();
           setOpen(!open);
         }}
-        className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-colors"
+        className="p-2.5 -m-1 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors touch-manipulation"
+        aria-label="프로젝트 메뉴"
       >
-        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
           <circle cx="10" cy="4" r="1.5" />
           <circle cx="10" cy="10" r="1.5" />
           <circle cx="10" cy="16" r="1.5" />
@@ -144,14 +145,14 @@ function ActionMenu({
             className="fixed inset-0 z-20"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute right-0 top-8 z-30 w-44 rounded-lg border border-gray-700 bg-gray-800 shadow-xl shadow-black/30 py-1">
+          <div className="absolute right-0 top-10 z-30 w-48 rounded-xl border border-gray-700 bg-gray-800 shadow-xl shadow-black/30 py-1.5">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setOpen(false);
                 onEdit();
               }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors touch-manipulation"
             >
               <PencilIcon />
               수정
@@ -159,19 +160,19 @@ function ActionMenu({
             <Link
               href={`/projects/${projectId}/sessions`}
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+              className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors touch-manipulation"
             >
               <LayersIcon />
               세션 보기
             </Link>
-            <div className="border-t border-gray-700 my-1" />
+            <div className="border-t border-gray-700 my-1.5" />
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setOpen(false);
                 onDelete();
               }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors touch-manipulation"
             >
               <TrashIcon />
               삭제
@@ -370,8 +371,8 @@ function ProjectCard({
           </p>
         </div>
 
-        {/* 액션 메뉴 - 호버 시 표시, Link 위에 표시되도록 z-index 설정 */}
-        <div className="relative z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+        {/* 액션 메뉴 - 항상 표시 (모바일 터치 지원), Link 위에 표시되도록 z-index 설정 */}
+        <div className="relative z-10">
           <ActionMenu
             projectId={project.id}
             onEdit={() => setEditOpen(true)}

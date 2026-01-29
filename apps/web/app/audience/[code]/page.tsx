@@ -80,6 +80,7 @@ function PasswordGate({ code, onValidated, initialError }: { code: string; onVal
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(initialError ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSlowLoading, setShowSlowLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -92,13 +93,27 @@ function PasswordGate({ code, onValidated, initialError }: { code: string; onVal
 
     setIsSubmitting(true);
     setError(null);
+    setShowSlowLoading(false);
+
+    // Show slow loading indicator after 5 seconds
+    const slowLoadingTimer = setTimeout(() => {
+      setShowSlowLoading(true);
+    }, 5000);
+
+    // Create abort controller for 10-second timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     try {
       const res = await fetch("/api/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code, password: password.trim() }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
+      clearTimeout(slowLoadingTimer);
 
       if (!res.ok) {
         setError("코드 또는 비밀번호가 올바르지 않습니다.");
@@ -108,8 +123,15 @@ function PasswordGate({ code, onValidated, initialError }: { code: string; onVal
 
       const json = await res.json() as { data: JoinResponse };
       onValidated(json.data);
-    } catch {
-      setError("연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.");
+    } catch (err) {
+      clearTimeout(timeoutId);
+      clearTimeout(slowLoadingTimer);
+
+      if ((err as Error).name === 'AbortError') {
+        setError("연결 시간이 초과되었습니다. 다시 시도해주세요.");
+      } else {
+        setError("연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.");
+      }
       setIsSubmitting(false);
     }
   }, [code, password, onValidated]);
@@ -176,12 +198,19 @@ function PasswordGate({ code, onValidated, initialError }: { code: string; onVal
             }}
           >
             {isSubmitting ? (
-              <span className="inline-flex items-center gap-2">
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                  <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                </svg>
-                검증 중...
+              <span className="inline-flex flex-col items-center gap-1">
+                <span className="inline-flex items-center gap-2">
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                    <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  검증 중...
+                </span>
+                {showSlowLoading && (
+                  <span className="text-xs text-amber-300 animate-pulse">
+                    연결이 지연되고 있습니다...
+                  </span>
+                )}
               </span>
             ) : (
               "참여하기"
@@ -664,6 +693,7 @@ export default function AudiencePage() {
   const [projectData, setProjectData] = useState<JoinResponse | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [showSlowLoadingIndicator, setShowSlowLoadingIndicator] = useState(false);
 
   // ─── Token-based access: exchange token for project data ──────────────────
   useEffect(() => {
@@ -680,6 +710,16 @@ export default function AudiencePage() {
     const exchangeToken = async () => {
       setIsValidating(true);
       setValidationError(null);
+      setShowSlowLoadingIndicator(false);
+
+      // Show slow loading indicator after 5 seconds
+      const slowLoadingTimer = setTimeout(() => {
+        setShowSlowLoadingIndicator(true);
+      }, 5000);
+
+      // Create abort controller for 10-second timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       try {
         // POST the token to /api/join with a special header so the server
@@ -691,7 +731,11 @@ export default function AudiencePage() {
             "x-audience-token": tokenFromUrl,
           },
           body: JSON.stringify({ code, token: tokenFromUrl }),
+          signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
+        clearTimeout(slowLoadingTimer);
 
         if (!res.ok) {
           setValidationError("토큰이 유효하지 않거나 만료되었습니다. 비밀번호로 다시 접속해주세요.");
@@ -701,8 +745,15 @@ export default function AudiencePage() {
 
         const json = await res.json() as { data: JoinResponse };
         setProjectData(json.data);
-      } catch {
-        setValidationError("연결에 문제가 있습니다. 비밀번호로 다시 접속해주세요.");
+      } catch (err) {
+        clearTimeout(timeoutId);
+        clearTimeout(slowLoadingTimer);
+
+        if ((err as Error).name === 'AbortError') {
+          setValidationError("연결 시간이 초과되었습니다. 다시 시도해주세요.");
+        } else {
+          setValidationError("연결에 문제가 있습니다. 비밀번호로 다시 접속해주세요.");
+        }
         setIsValidating(false);
       }
     };
@@ -719,13 +770,27 @@ export default function AudiencePage() {
     const validate = async () => {
       setIsValidating(true);
       setValidationError(null);
+      setShowSlowLoadingIndicator(false);
+
+      // Show slow loading indicator after 5 seconds
+      const slowLoadingTimer = setTimeout(() => {
+        setShowSlowLoadingIndicator(true);
+      }, 5000);
+
+      // Create abort controller for 10-second timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       try {
         const res = await fetch("/api/join", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code, password: passwordFromUrl }),
+          signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
+        clearTimeout(slowLoadingTimer);
 
         if (!res.ok) {
           setValidationError("코드 또는 비밀번호가 올바르지 않습니다. 아래에서 비밀번호를 다시 입력하세요.");
@@ -735,8 +800,15 @@ export default function AudiencePage() {
 
         const json = await res.json() as { data: JoinResponse };
         setProjectData(json.data);
-      } catch {
-        setValidationError("연결에 문제가 있습니다. 아래에서 비밀번호를 다시 입력하세요.");
+      } catch (err) {
+        clearTimeout(timeoutId);
+        clearTimeout(slowLoadingTimer);
+
+        if ((err as Error).name === 'AbortError') {
+          setValidationError("연결 시간이 초과되었습니다. 다시 시도해주세요.");
+        } else {
+          setValidationError("연결에 문제가 있습니다. 아래에서 비밀번호를 다시 입력하세요.");
+        }
         setIsValidating(false);
       }
     };
@@ -765,6 +837,11 @@ export default function AudiencePage() {
             </svg>
           </div>
           <p className="text-sm text-gray-500">검증 중...</p>
+          {showSlowLoadingIndicator && (
+            <p className="text-xs text-amber-400 mt-3 animate-pulse">
+              연결이 지연되고 있습니다...
+            </p>
+          )}
         </div>
       </div>
     );
