@@ -80,7 +80,6 @@ function PasswordGate({ code, onValidated, initialError }: { code: string; onVal
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(initialError ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSlowLoading, setShowSlowLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -93,14 +92,7 @@ function PasswordGate({ code, onValidated, initialError }: { code: string; onVal
 
     setIsSubmitting(true);
     setError(null);
-    setShowSlowLoading(false);
 
-    // Show slow loading indicator after 5 seconds
-    const slowLoadingTimer = setTimeout(() => {
-      setShowSlowLoading(true);
-    }, 5000);
-
-    // Create abort controller for 10-second timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
 
@@ -113,165 +105,106 @@ function PasswordGate({ code, onValidated, initialError }: { code: string; onVal
       });
 
       clearTimeout(timeoutId);
-      clearTimeout(slowLoadingTimer);
 
       if (!res.ok) {
-        setError("코드 또는 비밀번호가 올바르지 않습니다.");
+        setError("코드 또는 비밀번호가 올바르지 않습니다");
         setIsSubmitting(false);
         return;
       }
 
-      const json = await res.json() as { data: JoinResponse };
-      onValidated(json.data);
+      const json = await res.json() as JoinResponse;
+      onValidated(json);
     } catch (err) {
       clearTimeout(timeoutId);
-      clearTimeout(slowLoadingTimer);
 
       if ((err as Error).name === 'AbortError') {
-        setError("연결 시간이 초과되었습니다. 다시 시도해주세요.");
+        setError("연결 시간이 초과되었습니다");
       } else {
-        setError("연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.");
+        setError("연결에 문제가 있습니다");
       }
       setIsSubmitting(false);
     }
   }, [code, password, onValidated]);
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-5">
-      {/* Decorative ambient glow */}
-      <div
-        className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full opacity-10 blur-3xl pointer-events-none"
-        style={{ background: "radial-gradient(circle, #6366f1 0%, transparent 70%)" }}
-      />
-
-      <div className="relative z-10 w-full max-w-sm">
-        {/* Logo mark */}
-        <div className="text-center mb-10">
-          <h1 className="text-2xl font-bold text-white tracking-tight">Teu-Im</h1>
-          <p className="text-xs text-gray-500 mt-1.5 tracking-wide uppercase">실시간 통역</p>
-        </div>
-
-        {/* Code badge */}
-        <div className="flex justify-center mb-8">
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gray-800 bg-gray-900">
-            <span className="text-xs text-gray-500 uppercase tracking-wider">행사 코드</span>
-            <span className="text-sm font-mono font-semibold text-indigo-400">{code.toUpperCase()}</span>
-          </span>
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center px-6">
+      <div className="w-full max-w-md">
+        {/* Project code - large and prominent */}
+        <div className="text-center mb-12">
+          <div className="text-sm text-gray-500 mb-3">행사 코드</div>
+          <div className="text-5xl font-bold text-white tracking-tight mb-1">{code.toUpperCase()}</div>
+          <div className="text-xs text-gray-600 mt-4">비밀번호를 입력하여 참여하세요</div>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              참여 비밀번호
-            </label>
-            <input
-              ref={inputRef}
-              type="password"
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setError(null); }}
-              placeholder="비밀번호 입력"
-              className="w-full px-4 py-3 rounded-xl bg-gray-900 border border-gray-800 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-              autoComplete="off"
-            />
-          </div>
+          <input
+            ref={inputRef}
+            type="password"
+            value={password}
+            onChange={(e) => { setPassword(e.target.value); setError(null); }}
+            placeholder="비밀번호"
+            className="w-full px-6 py-4 rounded-2xl bg-gray-900 border-2 border-gray-800 text-white text-lg placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors"
+            autoComplete="off"
+            disabled={isSubmitting}
+          />
 
-          {/* Error */}
           {error && (
-            <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-red-950 border border-red-900/50">
-              <svg className="w-4 h-4 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9.303 3.376c-.866 1.5-2.747 2.847-5.577 3.724-.279.09-.58.165-.89.226C20.531 20.726 22 16.594 22 12.423c0-5.391-4.582-9.744-10.228-9.744-5.646 0-10.228 4.353-10.228 9.744 0 4.171 1.469 8.303 5.721 8.274.31-.061.611-.136.89-.226-2.83-.877-4.711-2.224-5.577-3.724" />
-              </svg>
-              <p className="text-xs text-red-300">{error}</p>
+            <div className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20">
+              <p className="text-sm text-red-400">{error}</p>
             </div>
           )}
 
           <button
             type="submit"
             disabled={isSubmitting || !password.trim()}
-            className="w-full py-3 rounded-xl font-semibold text-white text-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.97]"
+            className="w-full py-4 rounded-2xl font-semibold text-white text-base transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
-              background: isSubmitting
-                ? "#4f46e5"
-                : "linear-gradient(135deg, #6366f1, #4f46e5)",
-              boxShadow: isSubmitting ? "none" : "0 4px 20px rgba(99, 102, 241, 0.3)",
+              background: "linear-gradient(135deg, #6366f1, #4f46e5)",
             }}
           >
-            {isSubmitting ? (
-              <span className="inline-flex flex-col items-center gap-1">
-                <span className="inline-flex items-center gap-2">
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                    <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                  </svg>
-                  검증 중...
-                </span>
-                {showSlowLoading && (
-                  <span className="text-xs text-amber-300 animate-pulse">
-                    연결이 지연되고 있습니다...
-                  </span>
-                )}
-              </span>
-            ) : (
-              "참여하기"
-            )}
+            {isSubmitting ? "확인 중..." : "입장하기"}
           </button>
         </form>
-
-        <p className="text-center text-xs text-gray-600 mt-6">
-          행사 주최자로부터 코드와 비밀번호를 받아야 합니다
-        </p>
       </div>
     </div>
   );
 }
 
-// ─── Connection Status Bar ───────────────────────────────────────────────────
+// ─── Connection Status Indicator (Minimal) ───────────────────────────────────
 
-function ConnectionStatusBar({ status, projectStatus }: { status: ConnectionState; projectStatus: string }) {
+function ConnectionStatusIndicator({ status, projectStatus }: { status: ConnectionState; projectStatus: string }) {
   if (projectStatus === "ended") {
     return (
-      <div className="shrink-0 px-4 py-2 bg-gray-900 border-b border-gray-800">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-gray-600" />
-          <span className="text-xs text-gray-500">행사가 종료되었습니다</span>
-        </div>
+      <div className="flex items-center gap-1.5">
+        <span className="w-1.5 h-1.5 rounded-full bg-gray-600" />
+        <span className="text-xs text-gray-500">종료됨</span>
       </div>
     );
   }
 
   const configs = {
-    connected: { dot: "bg-emerald-400", pulse: true, label: "실시간 연결됨", badge: "라이브" },
-    reconnecting: { dot: "bg-amber-400", pulse: true, label: "재연결 중...", badge: null },
-    disconnected: { dot: "bg-red-400", pulse: false, label: "연결 끊김", badge: null },
-    waiting: { dot: "bg-gray-600", pulse: false, label: "세션 시작 대기 중", badge: null },
+    connected: { dot: "bg-emerald-400", pulse: true },
+    reconnecting: { dot: "bg-amber-400", pulse: true },
+    disconnected: { dot: "bg-red-400", pulse: false },
+    waiting: { dot: "bg-gray-600", pulse: false },
   } as const;
 
   const cfg = configs[status];
 
   return (
-    <div className="shrink-0 px-4 py-2 bg-gray-900 border-b border-gray-800">
-      <div className="flex items-center gap-2">
-        <div className="relative flex items-center justify-center w-3 h-3">
-          {cfg.pulse && (
-            <span className={`absolute inset-0 rounded-full animate-ping ${cfg.dot} opacity-30`} />
-          )}
-          <span className={`relative z-10 w-2 h-2 rounded-full ${cfg.dot}`} />
-        </div>
-        <span className="text-xs text-gray-400">{cfg.label}</span>
-        {cfg.badge && (
-          <span className="text-xs px-1.5 py-0.5 rounded-md bg-emerald-950 text-emerald-400 border border-emerald-900/50">
-            {cfg.badge}
-          </span>
-        )}
-      </div>
+    <div className="relative flex items-center justify-center w-2 h-2">
+      {cfg.pulse && (
+        <span className={`absolute inset-0 rounded-full animate-ping ${cfg.dot} opacity-40`} />
+      )}
+      <span className={`relative z-10 w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
     </div>
   );
 }
 
-// ─── Floating Language Selector ──────────────────────────────────────────────
+// ─── Simple Language Selector ────────────────────────────────────────────────
 
-function FloatingLanguageSelector({
+function LanguageSelector({
   languages,
   selected,
   onSelect,
@@ -283,120 +216,79 @@ function FloatingLanguageSelector({
   if (languages.length <= 1) return null;
 
   return (
-    <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center px-4">
-      <div
-        className="flex gap-1.5 px-2 py-1.5 rounded-2xl shadow-lg shadow-black/40"
-        style={{ background: "rgba(17, 17, 27, 0.85)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.08)" }}
+    <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+      <button
+        onClick={() => onSelect(null)}
+        className="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors"
+        style={{
+          background: selected === null ? "#6366f1" : "#1f2937",
+          color: selected === null ? "#fff" : "#9ca3af",
+        }}
       >
-        {/* All languages pill */}
+        전체
+      </button>
+
+      {languages.map((lang) => (
         <button
-          onClick={() => onSelect(null)}
-          className="px-3 py-1 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-95"
+          key={lang}
+          onClick={() => onSelect(lang)}
+          className="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors"
           style={{
-            background: selected === null ? "linear-gradient(135deg, #6366f1, #4f46e5)" : "transparent",
-            color: selected === null ? "#fff" : "rgba(160,160,175,0.8)",
-            boxShadow: selected === null ? "0 2px 10px rgba(99,102,241,0.3)" : "none",
+            background: selected === lang ? "#6366f1" : "#1f2937",
+            color: selected === lang ? "#fff" : "#9ca3af",
           }}
         >
-          전체
+          {getLangLabel(lang)}
         </button>
-
-        {languages.map((lang) => (
-          <button
-            key={lang}
-            onClick={() => onSelect(lang)}
-            className="px-3 py-1 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-95"
-            style={{
-              background: selected === lang ? "linear-gradient(135deg, #6366f1, #4f46e5)" : "transparent",
-              color: selected === lang ? "#fff" : "rgba(160,160,175,0.8)",
-              boxShadow: selected === lang ? "0 2px 10px rgba(99,102,241,0.3)" : "none",
-            }}
-          >
-            {getLangLabel(lang)}
-          </button>
-        ))}
-      </div>
+      ))}
     </div>
   );
 }
 
-// ─── Interpretation Card ─────────────────────────────────────────────────────
+// ─── Interpretation Card (Large Text for Viewing) ────────────────────────────
 
-function InterpretationCard({ item, index }: { item: Interpretation; index: number }) {
+function InterpretationCard({ item, isLatest }: { item: Interpretation; isLatest: boolean }) {
   return (
     <article
-      className="animate-slide-up"
-      style={{ animationDelay: `${Math.min(index * 40, 200)}ms` }}
+      className="py-6 border-b border-gray-800/50 last:border-0"
     >
-      <div
-        className="rounded-xl overflow-hidden transition-all duration-300"
+      {/* Translation — very large and readable */}
+      <p
+        className="text-2xl sm:text-3xl leading-relaxed mb-4"
         style={{
-          background: item.isFinal ? "rgba(30, 32, 42, 0.9)" : "rgba(25, 27, 35, 0.6)",
-          border: item.isFinal ? "1px solid rgba(255,255,255,0.08)" : "1px dashed rgba(255,255,255,0.12)",
+          color: item.isFinal ? "#f1f5f9" : "#cbd5e1",
+          fontWeight: 500,
         }}
       >
-        {/* Meta row */}
-        <div className="flex items-center justify-between px-4 pt-3 pb-1">
-          <div className="flex items-center gap-2">
-            {item.targetLanguage && (
-              <span className="text-xs font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-indigo-950 text-indigo-400 border border-indigo-900/50">
-                {item.targetLanguage}
-              </span>
-            )}
-            <span className="text-xs font-mono text-gray-600">#{item.sequence}</span>
-          </div>
+        {item.translatedText}
+      </p>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-600">
-              {(() => {
-                try {
-                  const d = new Date(item.createdAt);
-                  const h = d.getHours();
-                  const m = d.getMinutes().toString().padStart(2, "0");
-                  const ampm = h >= 12 ? "오후" : "오전";
-                  return `${ampm} ${h % 12 || 12}:${m}`;
-                } catch { return ""; }
-              })()}
-            </span>
-            {!item.isFinal && (
-              <span className="flex items-center gap-1 text-xs font-medium text-amber-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                실시간
-              </span>
-            )}
-          </div>
-        </div>
+      {/* Source text — smaller, muted */}
+      <p className="text-base text-gray-500 mb-3">
+        {item.originalText}
+      </p>
 
-        {/* Content */}
-        <div className="px-4 pb-4">
-          {/* Source text — small, muted */}
-          <p
-            className="text-xs leading-relaxed mb-3"
-            style={{
-              color: item.isFinal ? "rgba(160,160,175,0.7)" : "rgba(160,160,175,0.45)",
-              fontStyle: item.isFinal ? "normal" : "italic",
-            }}
-          >
-            {item.originalText}
-          </p>
-
-          {/* Divider with diamond */}
-          <div className="flex items-center gap-2 mb-3">
-            <div className="flex-1 h-px bg-gray-800" />
-            <div className="w-1.5 h-1.5 rotate-45 bg-gray-800" />
-            <div className="flex-1 h-px bg-gray-800" />
-          </div>
-
-          {/* Translation — large, prominent */}
-          <p
-            className="text-xl font-medium leading-relaxed tracking-tight"
-            style={{
-              color: item.isFinal ? "#f1f1f5" : "rgba(200,200,215,0.8)",
-            }}
-          >
-            {item.translatedText}
-          </p>
-        </div>
+      {/* Meta info */}
+      <div className="flex items-center gap-3 text-xs text-gray-600">
+        {item.targetLanguage && (
+          <span className="uppercase font-medium">{item.targetLanguage}</span>
+        )}
+        <span>
+          {(() => {
+            try {
+              const d = new Date(item.createdAt);
+              const h = d.getHours();
+              const m = d.getMinutes().toString().padStart(2, "0");
+              return `${h}:${m}`;
+            } catch { return ""; }
+          })()}
+        </span>
+        {!item.isFinal && (
+          <span className="flex items-center gap-1 text-amber-400">
+            <span className="w-1 h-1 rounded-full bg-amber-400 animate-pulse" />
+            실시간
+          </span>
+        )}
       </div>
     </article>
   );
@@ -596,15 +488,15 @@ function LiveView({ projectData }: { projectData: JoinResponse }) {
 
   // ─── Empty state ──────────────────────────────────────────────────────────
   const EmptyState = () => (
-    <div className="flex flex-col items-center justify-center px-6 py-24 text-center">
-      <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5 bg-gray-900 border border-gray-800">
-        <svg className="w-7 h-7 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <div className="flex flex-col items-center justify-center h-full text-center px-6">
+      <div className="text-gray-600 mb-3">
+        <svg className="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12.75a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM21 12c0 6.627-4.03 12-9 12a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-6.627 4.03-12 9-12s9 5.373 9 12z" />
         </svg>
       </div>
-      <h3 className="font-medium text-sm text-gray-400">아직 통역 내용이 없습니다</h3>
-      <p className="text-xs mt-2 max-w-xs leading-relaxed text-gray-600">
-        행사가 시작되면 실시간 통역 내용이 여기에 표시됩니다.
+      <h3 className="text-sm text-gray-500">통역 대기 중</h3>
+      <p className="text-xs text-gray-600 mt-2 max-w-xs">
+        행사가 시작되면 자막이 표시됩니다
       </p>
     </div>
   );
@@ -614,58 +506,44 @@ function LiveView({ projectData }: { projectData: JoinResponse }) {
       {/* Session ended overlay */}
       {(isSessionEnded || connectionStatus === "ended") && <SessionEndedOverlay />}
 
-      {/* Header */}
-      <header className="shrink-0 px-4 pt-safe-top pb-3 pt-3 bg-gray-950 border-b border-gray-900">
-        <div className="flex items-center justify-between">
+      {/* Simple header */}
+      <header className="shrink-0 px-5 py-4 bg-gray-950 border-b border-gray-900">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex-1 min-w-0">
-            <h1 className="text-base font-semibold text-white truncate">{projectData.projectName}</h1>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-xs font-mono text-gray-600">
-                {projectData.sourceLanguage.toUpperCase()} → {projectData.targetLanguage.toUpperCase()}
-              </span>
-              {availableLanguages.length > 1 && (
-                <span className="text-xs text-gray-500">({availableLanguages.length}개 언어)</span>
-              )}
-            </div>
+            <h1 className="text-lg font-semibold text-white truncate">{projectData.projectName}</h1>
           </div>
-
-          {/* Teu-Im badge */}
-          <span className="text-xs font-bold text-indigo-400 opacity-60 tracking-wider">TEU-IM</span>
+          <ConnectionStatusIndicator status={sessionId ? connectionState : "waiting"} projectStatus={projectData.status} />
         </div>
-      </header>
 
-      {/* Connection status */}
-      <ConnectionStatusBar status={sessionId ? connectionState : "waiting"} projectStatus={projectData.status} />
+        {/* Language selector */}
+        {availableLanguages.length > 0 && (
+          <LanguageSelector
+            languages={availableLanguages}
+            selected={selectedLanguage}
+            onSelect={setSelectedLanguage}
+          />
+        )}
+      </header>
 
       {/* Error banner */}
       {displayError && (
-        <div className="shrink-0 mx-3 mt-2 px-3 py-2 rounded-lg flex items-center gap-2 bg-amber-950 border border-amber-900/50">
-          <svg className="w-4 h-4 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c.866 1.5 2.747 2.847 5.577 3.724.279.09.58.165.89.226C9.469 20.726 8 16.594 8 12.423c0-5.391 4.582-9.744 10.228-9.744 1.41 0 2.744.306 3.938.858M12 9a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <p className="text-xs text-amber-300">{displayError}</p>
+        <div className="shrink-0 mx-4 mt-3 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20">
+          <p className="text-sm text-red-400">{displayError}</p>
         </div>
       )}
 
-      {/* Interpretation scroll area */}
-      <div className="flex-1 overflow-y-auto min-h-0 relative">
+      {/* Main content area - large scrollable text */}
+      <div className="flex-1 overflow-y-auto min-h-0">
         {filtered.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="flex flex-col gap-3 px-3 py-3 pb-24">
+          <div className="px-5 py-6">
             {filtered.map((item, idx) => (
-              <InterpretationCard key={item.id} item={item} index={idx} />
+              <InterpretationCard key={item.id} item={item} isLatest={idx === filtered.length - 1} />
             ))}
-            <div ref={bottomRef} className="h-2" />
+            <div ref={bottomRef} className="h-4" />
           </div>
         )}
-
-        {/* Floating language selector — anchored to scroll container bottom */}
-        <FloatingLanguageSelector
-          languages={availableLanguages}
-          selected={selectedLanguage}
-          onSelect={setSelectedLanguage}
-        />
       </div>
     </div>
   );
@@ -743,8 +621,8 @@ export default function AudiencePage() {
           return;
         }
 
-        const json = await res.json() as { data: JoinResponse };
-        setProjectData(json.data);
+        const json = await res.json() as JoinResponse;
+        setProjectData(json);
       } catch (err) {
         clearTimeout(timeoutId);
         clearTimeout(slowLoadingTimer);
@@ -798,8 +676,8 @@ export default function AudiencePage() {
           return;
         }
 
-        const json = await res.json() as { data: JoinResponse };
-        setProjectData(json.data);
+        const json = await res.json() as JoinResponse;
+        setProjectData(json);
       } catch (err) {
         clearTimeout(timeoutId);
         clearTimeout(slowLoadingTimer);
@@ -824,24 +702,15 @@ export default function AudiencePage() {
   // Auto-validating from URL password or token
   if (isValidating) {
     return (
-      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-5">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full opacity-10 blur-3xl pointer-events-none"
-          style={{ background: "radial-gradient(circle, #6366f1 0%, transparent 70%)" }}
-        />
-        <div className="relative z-10 text-center">
-          <div className="relative mb-6 mx-auto w-12 h-12">
-            <div className="absolute inset-0 rounded-full border-2 border-indigo-500 animate-ping opacity-30" />
-            <svg className="w-12 h-12 animate-spin text-indigo-500 relative" fill="none" viewBox="0 0 24 24">
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center px-6">
+        <div className="text-center">
+          <div className="relative mb-4 mx-auto w-10 h-10">
+            <svg className="w-10 h-10 animate-spin text-indigo-500" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
               <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
             </svg>
           </div>
-          <p className="text-sm text-gray-500">검증 중...</p>
-          {showSlowLoadingIndicator && (
-            <p className="text-xs text-amber-400 mt-3 animate-pulse">
-              연결이 지연되고 있습니다...
-            </p>
-          )}
+          <p className="text-sm text-gray-500">확인 중...</p>
         </div>
       </div>
     );

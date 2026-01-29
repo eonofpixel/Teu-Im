@@ -347,7 +347,7 @@ function ReleaseNotesSection({ notes }: { notes: string }) {
 // ─── macOS 문제 해결 섹션 ─────────────────────────────────
 
 function MacOSTroubleshootingSection() {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [copiedCommand, setCopiedCommand] = useState(false);
 
   const command = "xattr -cr ~/Downloads/Teu-Im_*.dmg";
@@ -366,7 +366,7 @@ function MacOSTroubleshootingSection() {
       >
         <div className="flex items-center gap-3">
           <AlertTriangleIcon />
-          <h2 className="text-sm font-semibold text-amber-100">macOS 설치 문제 해결</h2>
+          <h2 className="text-sm font-semibold text-amber-100">⚠️ macOS 필수 설치 단계</h2>
         </div>
         <svg
           className={`w-4 h-4 text-amber-500 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
@@ -385,7 +385,7 @@ function MacOSTroubleshootingSection() {
             macOS에서 &quot;손상됨&quot; 오류가 발생하는 경우
           </h3>
           <p className="text-xs text-amber-200/70 mb-4 leading-relaxed">
-            이것은 인터넷에서 다운로드한 서명되지 않은 앱에 대한 macOS의 정상적인 보안 기능입니다.
+            <strong className="text-amber-100">macOS 사용자는 반드시 아래 단계 중 하나를 수행해야 합니다.</strong> 이것은 인터넷에서 다운로드한 서명되지 않은 앱에 대한 macOS의 정상적인 보안 기능입니다.
           </p>
 
           {/* Solution 1: Terminal Command */}

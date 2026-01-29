@@ -38,6 +38,18 @@ function getLanguageName(code: string): string {
   return LANGUAGE_NAMES[code] ?? code;
 }
 
+// ─── 상태 인디케이터 ────────────────────────────────────
+function StatusDot({ status }: { status: 'idle' | 'connecting' | 'active' | 'paused' }) {
+  const colors = {
+    idle: 'bg-gray-500',
+    connecting: 'bg-amber-500 animate-pulse',
+    active: 'bg-emerald-500',
+    paused: 'bg-amber-500',
+  };
+
+  return <div className={`w-2 h-2 rounded-full ${colors[status]}`} />;
+}
+
 // ─── 타입 정의 ─────────────────────────────────────────────
 
 interface LiveInterpretation {
@@ -52,34 +64,42 @@ interface LiveInterpretation {
 
 type RecordingStatus = "stopped" | "recording" | "paused";
 
-// ─── 연결 상태 배지 ─────────────────────────────────────
+// ─── 상태 텍스트 ─────────────────────────────────────
+function getStatusText(connected: boolean, recording: boolean, paused: boolean): string {
+  if (paused) return '일시정지';
+  if (recording && connected) return '통역 중';
+  if (recording && !connected) return '연결 중...';
+  return '대기 중';
+}
 
-function ConnectionStatusBadge({ connected, recording, paused }: { connected: boolean; recording: boolean; paused: boolean }) {
-  if (paused) {
-    return (
-      <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-900/50 text-amber-400">
-        일시정지
-      </span>
-    );
-  }
-  if (recording && connected) {
-    return (
-      <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-900/50 text-emerald-400">
-        실시간 통역 중
-      </span>
-    );
-  }
-  if (recording && !connected) {
-    return (
-      <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-900/50 text-amber-400">
-        연결 중...
-      </span>
-    );
-  }
+function getStatusType(connected: boolean, recording: boolean, paused: boolean): 'idle' | 'connecting' | 'active' | 'paused' {
+  if (paused) return 'paused';
+  if (recording && connected) return 'active';
+  if (recording && !connected) return 'connecting';
+  return 'idle';
+}
+
+// ─── 프로젝트 헤더 (단일 프로젝트 또는 선택된 프로젝트) ──────
+
+function ProjectHeader({ project }: { project: Project }) {
+  const targetLangs = project.targetLangs?.length
+    ? project.targetLangs
+    : [project.targetLang];
+
   return (
-    <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-gray-800 text-gray-400">
-      대기 중
-    </span>
+    <div className="flex items-center gap-3">
+      <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+        <svg className="w-6 h-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+        </svg>
+      </div>
+      <div className="flex-1 min-w-0">
+        <h2 className="text-base font-semibold text-white truncate">{project.name}</h2>
+        <p className="text-xs text-gray-500 mt-0.5">
+          {getLanguageName(project.sourceLang)} → {targetLangs.map((l) => getLanguageName(l)).join(", ")}
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -98,8 +118,8 @@ function ProjectSelector({
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-400 mb-1.5">
-        프로젝트 선택
+      <label className="block text-xs font-medium text-gray-500 mb-2">
+        프로젝트
       </label>
       <select
         value={selectedProject?.id ?? ""}
@@ -108,9 +128,9 @@ function ProjectSelector({
           onChange(proj);
         }}
         disabled={disabled || projects.length === 0}
-        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2.5 text-sm text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full rounded-xl border border-gray-800 bg-gray-900 px-4 py-3 text-sm text-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <option value="">— 프로젝트를 선택해주세요 —</option>
+        <option value="">프로젝트를 선택해주세요</option>
         {projects.map((p) => (
           <option key={p.id} value={p.id}>
             {p.name} ({getLanguageName(p.sourceLang)} →{" "}
@@ -121,7 +141,7 @@ function ProjectSelector({
         ))}
       </select>
       {projects.length === 0 && (
-        <p className="text-xs text-gray-500 mt-1.5">
+        <p className="text-xs text-gray-600 mt-2">
           프로젝트가 없습니다. 먼저 프로젝트를 생성해주세요.
         </p>
       )}
@@ -129,36 +149,34 @@ function ProjectSelector({
   );
 }
 
-// ─── 원문 / 번역 표시 영역 ────────────────────────────────
+// ─── 원문 / 번역 표시 영역 (단순화) ────────────────────────
 
 function TranscriptionPanel({
   label,
   lang,
   text,
   placeholder,
-  accentColor,
 }: {
   label: string;
   lang: string;
   text: string;
   placeholder: string;
-  accentColor: string;
 }) {
   return (
-    <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <h3 className="text-sm font-semibold text-white">{label}</h3>
-        <span className={`text-xs px-2 py-0.5 rounded-full ${accentColor}`}>
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <h3 className="text-xs font-medium text-gray-500">{label}</h3>
+        <span className="text-xs text-gray-600">
           {getLanguageName(lang)}
         </span>
       </div>
-      <div className="min-h-[120px] rounded-lg border border-gray-800 bg-gray-800/50 p-4 overflow-y-auto max-h-[240px]">
+      <div className="min-h-[100px] rounded-2xl bg-gray-900/50 border border-gray-800/50 p-5 overflow-y-auto max-h-[200px]">
         {text ? (
-          <p className="text-sm leading-relaxed text-gray-200 whitespace-pre-wrap">
+          <p className="text-base leading-relaxed text-white whitespace-pre-wrap">
             {text}
           </p>
         ) : (
-          <p className="text-sm text-gray-500 italic">{placeholder}</p>
+          <p className="text-sm text-gray-600">{placeholder}</p>
         )}
       </div>
     </div>
@@ -220,6 +238,9 @@ export default function LivePage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [projectsLoading, setProjectsLoading] = useState(true);
+
+  // ─── API 키 상태 ────────────────────────────────────────
+  const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
 
   // ─── 세션 상태 ──────────────────────────────────────────
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -309,6 +330,24 @@ export default function LivePage() {
     fetchProjects();
   }, [fetchProjects]);
 
+  // ─── API 키 확인 ────────────────────────────────────────
+  useEffect(() => {
+    const checkApiKey = async () => {
+      const supabase = createBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await (supabase as any)
+        .from("users")
+        .select("soniox_api_key")
+        .eq("id", user.id)
+        .single();
+
+      setHasApiKey(!!data?.soniox_api_key);
+    };
+    checkApiKey();
+  }, []);
+
   // ─── 프로젝트 변경 시 상태 초기화 ──────────────────────
   const handleProjectChange = useCallback(
     (project: Project | null) => {
@@ -332,22 +371,33 @@ export default function LivePage() {
   const createSession = useCallback(async (): Promise<string | null> => {
     if (!selectedProject) return null;
 
-    const res = await fetch(`/api/projects/${selectedProject.id}/sessions`, {
-      method: "POST",
-    });
+    try {
+      const res = await fetch(`/api/projects/${selectedProject.id}/sessions`, {
+        method: "POST",
+      });
 
-    if (res.ok) {
-      const data = await res.json();
-      return data.session?.id ?? null;
+      if (res.ok) {
+        const data = await res.json();
+        return data.session?.id ?? null;
+      }
+
+      // 기존 활성 세션이 있는 경우 재사용
+      if (res.status === 409) {
+        const data = await res.json();
+        return data.sessionId ?? data.details?.sessionId ?? null;
+      }
+
+      // 에러 응답 파싱
+      const errorData = await res.json().catch(() => ({}));
+      const errorMessage = errorData.error || `API 오류 (${res.status})`;
+      console.error("세션 생성 실패:", res.status, errorData);
+      setSaveError(errorMessage);
+      return null;
+    } catch (error) {
+      console.error("세션 생성 네트워크 오류:", error);
+      setSaveError("네트워크 오류가 발생했습니다. 인터넷 연결을 확인하세요.");
+      return null;
     }
-
-    // 기존 활성 세션이 있는 경우 재사용
-    if (res.status === 409) {
-      const data = await res.json();
-      return data.sessionId ?? null;
-    }
-
-    return null;
   }, [selectedProject]);
 
   // ─── 세션 종료 ──────────────────────────────────────────
@@ -415,12 +465,11 @@ export default function LivePage() {
 
     // 세션 생성
     setCreatingSession(true);
-    setSaveError(null);
     setSonioxError(null);
     const sessionId = await createSession();
     setCreatingSession(false);
     if (!sessionId) {
-      setSaveError("세션을 생성할 수 없습니다. 잠시 후 다시 시도해주세요.");
+      // Error already set by createSession
       return;
     }
 
@@ -637,14 +686,21 @@ export default function LivePage() {
     };
   }, [recordingStatus, canStart, startRecording, pauseRecording, resumeRecording, stopRecording, endSession]);
 
+  // ─── 프로젝트 자동 선택 (단일 프로젝트일 경우) ─────────────
+  useEffect(() => {
+    if (!projectsLoading && projects.length === 1 && !selectedProject && !preselectedProjectId) {
+      setSelectedProject(projects[0]);
+    }
+  }, [projectsLoading, projects, selectedProject, preselectedProjectId]);
+
   // ─── 로딩 스케leton ──────────────────────────────────
   if (projectsLoading) {
     return (
-      <div className="max-w-3xl space-y-4">
-        <div className="h-7 w-16 bg-gray-800 rounded animate-pulse" />
-        <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 space-y-4">
+      <div className="max-w-2xl mx-auto space-y-6 py-8">
+        <div className="h-8 w-32 bg-gray-800 rounded-xl animate-pulse" />
+        <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-8 space-y-4">
           <div className="h-4 w-24 bg-gray-800 rounded animate-pulse" />
-          <div className="h-10 w-full bg-gray-800 rounded-lg animate-pulse" />
+          <div className="h-12 w-full bg-gray-800 rounded-xl animate-pulse" />
         </div>
       </div>
     );
@@ -656,310 +712,299 @@ export default function LivePage() {
     : [selectedProject?.targetLang ?? "en"];
   const displayTargetLang = targetLangs[0];
 
+  // ─── 상태 파생 ────────────────────────────────────────
+  const statusType = getStatusType(sonioxConnected, isRecording, isPaused);
+  const statusText = getStatusText(sonioxConnected, isRecording, isPaused);
+
   return (
-    <div className="max-w-3xl space-y-4">
-      {/* 페이지 헤더 */}
-      <div>
-        <h1 className="text-xl font-bold text-white">실시간 통역</h1>
-        <p className="text-sm text-gray-400 mt-1">
-          웹에서 직접 통역 세션을 진행하세요
-        </p>
-      </div>
-
-      {/* 프로젝트 선택 & 연결 상태 카드 */}
-      <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-white">세션 설정</h2>
-          <ConnectionStatusBadge connected={sonioxConnected} recording={isRecording} paused={isPaused} />
-        </div>
-
-        {preselectedProjectId && selectedProject ? (
-          // Show fixed project header with back button
-          <div className="flex items-center gap-3 p-4 rounded-lg border border-gray-800 bg-gray-800/50">
-            <Link
-              href="/projects"
-              className="p-2 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
-              aria-label="프로젝트 목록으로 돌아가기"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+    <div className="max-w-2xl mx-auto space-y-6 py-8">
+      {/* API 키 경고 배너 (최상단) */}
+      {hasApiKey === false && (
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/20 flex-shrink-0">
+              <svg className="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
-            </Link>
+            </div>
             <div className="flex-1">
-              <h3 className="text-base font-semibold text-white">{selectedProject.name}</h3>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {getLanguageName(selectedProject.sourceLang)} → {(selectedProject.targetLangs?.length ? selectedProject.targetLangs : [selectedProject.targetLang]).map((l) => getLanguageName(l)).join(", ")}
+              <h3 className="text-sm font-semibold text-amber-200">Soniox API 키가 필요합니다</h3>
+              <p className="text-sm text-amber-200/70 mt-1 mb-3">
+                실시간 통역을 시작하려면 먼저 설정에서 API 키를 등록해야 합니다.
               </p>
+              <a
+                href="/settings"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl bg-amber-600 hover:bg-amber-500 text-white transition-colors"
+              >
+                설정으로 이동
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
+              </a>
             </div>
           </div>
-        ) : (
-          // Show project selector dropdown
+        </div>
+      )}
+
+      {/* 프로젝트 헤더 (자동 선택 또는 URL 프리셋) */}
+      {selectedProject && (projects.length === 1 || preselectedProjectId) && (
+        <div className="flex items-center justify-between">
+          <ProjectHeader project={selectedProject} />
+          {preselectedProjectId && (
+            <Link
+              href="/projects"
+              className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-500 hover:text-white transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              프로젝트 목록
+            </Link>
+          )}
+        </div>
+      )}
+
+      {/* 프로젝트 선택 드롭다운 (다중 프로젝트 & URL 프리셋 없음) */}
+      {!selectedProject && projects.length > 1 && !preselectedProjectId && (
+        <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-6">
           <ProjectSelector
             projects={projects}
             selectedProject={selectedProject}
             onChange={handleProjectChange}
             disabled={isActiveOrPaused}
           />
-        )}
+        </div>
+      )}
 
-        {/* Soniox 오류 표시 */}
-        {sonioxError && (
-          <p className="text-sm text-red-400 bg-red-900/20 rounded-lg px-3 py-2">
-            {sonioxError}
+      {/* 프로젝트 없음 안내 */}
+      {projects.length === 0 && (
+        <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-8 text-center">
+          <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+          </div>
+          <h3 className="text-base font-semibold text-white mb-2">프로젝트가 없습니다</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            먼저 프로젝트를 생성해주세요
           </p>
-        )}
+          <Link
+            href="/projects"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
+          >
+            프로젝트 만들기
+          </Link>
+        </div>
+      )}
 
-        {/* 사용 안내 */}
-        {!isActiveOrPaused && selectedProject && (
-          <p className="text-xs text-gray-500">
-            녹음을 시작하면 마이크 권한을 요청합니다. Soniox API 키가 설정에서 등록되어 있어야 합니다.
-          </p>
-        )}
-      </div>
 
-      {/* 청중 공유 */}
+      {/* 메인 통역 제어 영역 */}
       {selectedProject && (
-        <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
-          {/* 토글 헤더 */}
+        <div className="rounded-3xl border border-gray-800/50 bg-gradient-to-b from-gray-900/50 to-gray-900/30 p-8">
+          {/* 상태 표시 */}
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <StatusDot status={statusType} />
+            <span className="text-sm font-medium text-gray-400">{statusText}</span>
+          </div>
+
+          {/* Soniox 오류 표시 */}
+          {sonioxError && (
+            <div className="mb-6 rounded-xl bg-red-900/20 border border-red-500/20 p-4">
+              <p className="text-sm text-red-400 text-center">
+                {sonioxError}
+              </p>
+            </div>
+          )}
+
+          {/* 저장 성공/에러 메시지 */}
+          {saveSuccess && (
+            <div className="mb-6 rounded-xl bg-emerald-900/20 border border-emerald-500/20 p-4">
+              <p className="text-sm text-emerald-400 text-center">
+                세션이 저장되었습니다!
+              </p>
+            </div>
+          )}
+          {saveError && (
+            <div className="mb-6 rounded-xl bg-red-900/20 border border-red-500/20 p-4">
+              <p className="text-sm text-red-400 text-center">
+                {saveError}
+              </p>
+            </div>
+          )}
+
+          {/* 큰 원형 녹음 버튼 (Hero Element) */}
+          <div className="flex flex-col items-center gap-6 mb-6">
+            {recordingStatus === "stopped" && (
+              <button
+                onClick={startRecording}
+                disabled={!canStart || creatingSession}
+                className="group relative w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 disabled:from-gray-700 disabled:to-gray-800 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-indigo-500/50 disabled:shadow-none flex items-center justify-center"
+              >
+                {creatingSession ? (
+                  <div className="w-6 h-6 rounded-full border-3 border-white border-t-transparent animate-spin" />
+                ) : (
+                  <svg className="w-10 h-10 text-white group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </button>
+            )}
+
+            {recordingStatus === "recording" && (
+              <button
+                onClick={pauseRecording}
+                className="group relative w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-amber-500 hover:to-amber-600 transition-all duration-300 shadow-lg shadow-emerald-500/50 hover:shadow-amber-500/50 flex items-center justify-center animate-pulse"
+              >
+                <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
+
+            {recordingStatus === "paused" && (
+              <button
+                onClick={resumeRecording}
+                className="group relative w-24 h-24 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 hover:from-emerald-500 hover:to-emerald-600 transition-all duration-300 shadow-lg shadow-amber-500/50 hover:shadow-emerald-500/50 flex items-center justify-center"
+              >
+                <svg className="w-10 h-10 text-white group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
+
+            {/* 버튼 라벨 */}
+            <p className="text-sm font-medium text-gray-500">
+              {creatingSession && "세션 생성 중..."}
+              {!creatingSession && recordingStatus === "stopped" && "눌러서 통역 시작"}
+              {recordingStatus === "recording" && "눌러서 일시정지"}
+              {recordingStatus === "paused" && "눌러서 재개"}
+            </p>
+          </div>
+
+          {/* 부가 액션 버튼 */}
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            {/* 중지 버튼 */}
+            {(recordingStatus === "recording" || recordingStatus === "paused") && (
+              <button
+                onClick={stopRecording}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-400 hover:text-white bg-gray-800/50 hover:bg-gray-800 rounded-xl transition-colors"
+              >
+                <span className="w-2 h-2 rounded bg-current" />
+                중지
+              </button>
+            )}
+
+            {/* 세션 저장 버튼 */}
+            {activeSessionId && !isActiveOrPaused && interpretations.length > 0 && (
+              <button
+                onClick={saveSession}
+                disabled={!canSave}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {saving ? (
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+                {saving ? "저장 중..." : "세션 저장"}
+              </button>
+            )}
+          </div>
+
+          {/* 키보드 힌트 */}
+          <p className="text-xs text-gray-600 text-center mt-6">
+            <kbd className="px-1.5 py-0.5 bg-gray-800 rounded text-gray-400">Space</kbd> 시작/일시정지 • <kbd className="px-1.5 py-0.5 bg-gray-800 rounded text-gray-400">Esc</kbd> 중지
+          </p>
+        </div>
+      )}
+
+      {/* 오디오 웨이브폼 (녹음 중에만 표시) */}
+      {isRecording && audioStream && (
+        <LiveWaveform
+          stream={audioStream}
+          isRecording={isRecording}
+          className="rounded-2xl border border-gray-800/50 bg-gray-900/30 p-6"
+        />
+      )}
+
+      {/* 청중 카운터 (세션 활성 중에만 표시) */}
+      {(sessionStatus === "active" || sessionStatus === "paused") && (
+        <AudienceCounter
+          presence={audiencePresence}
+          visible={true}
+        />
+      )}
+
+      {/* 실시간 텍스트 표시 (녹음 중이거나 텍스트가 있을 때만) */}
+      {(isRecording || currentOriginalText || currentTranslatedText) && (
+        <div className="space-y-4">
+          <TranscriptionPanel
+            label="원문"
+            lang={sourceLang}
+            text={currentOriginalText}
+            placeholder="음성 인식 대기 중..."
+          />
+
+          <TranscriptionPanel
+            label="번역"
+            lang={displayTargetLang}
+            text={currentTranslatedText}
+            placeholder="번역 대기 중..."
+          />
+        </div>
+      )}
+
+      {/* 청중 공유 섹션 (접기/펼치기) */}
+      {selectedProject && (
+        <div className="rounded-2xl border border-gray-800/50 bg-gray-900/30 overflow-hidden">
           <button
             type="button"
             onClick={() => setAudienceShareOpen((prev) => !prev)}
-            className="w-full flex items-center justify-between px-6 py-4 text-left transition-colors hover:bg-gray-800/50"
+            className="w-full flex items-center justify-between px-6 py-4 text-left transition-colors hover:bg-gray-800/30"
             aria-expanded={audienceShareOpen}
           >
-            <div className="flex items-center gap-2.5">
-              {/* Share icon */}
-              <svg
-                className="w-4 h-4 text-indigo-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8m-2-2l-6-6m0 0L8 12m4-6v12"
-                />
+            <div className="flex items-center gap-3">
+              <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
               </svg>
-              <h2 className="text-sm font-semibold text-white">청중 공유</h2>
+              <div>
+                <h2 className="text-sm font-semibold text-white">청중과 공유</h2>
+                <p className="text-xs text-gray-600 mt-0.5">QR 코드로 실시간 통역 제공</p>
+              </div>
             </div>
-            {/* ChevronDown icon — rotated when open */}
             <svg
-              className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${audienceShareOpen ? "rotate-180" : ""}`}
+              className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${audienceShareOpen ? "rotate-180" : ""}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
               strokeWidth={2}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19 9l-7 7-7-7"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
 
-          {/* 서브타이틀 (항상 표시) */}
-          <p className="text-xs text-gray-500 px-6 pb-3">
-            QR 코드 또는 코드를 공유하여 청중이 실시간 통역을 볼 수 있습니다
-          </p>
-
-          {/* 접기/펼치기 콘텐츠 — desktop 기본 전개, mobile 기본 접힘 */}
-          {/* Mobile: audienceShareOpen 상태로 제어 / Desktop: 항상 열림 (sm:block) */}
-          <div className={`${audienceShareOpen ? "block" : "hidden"} sm:block`}>
-            <div className="px-4 pb-4">
+          {audienceShareOpen && (
+            <div className="px-6 pb-6 pt-2">
               <SessionQRCode
                 projectCode={selectedProject.code}
                 password={selectedProject.password}
               />
             </div>
-          </div>
+          )}
         </div>
       )}
 
-      {/* 청중 카운터 — 세션 활성 중에만 표시 */}
-      <AudienceCounter
-        presence={audiencePresence}
-        visible={sessionStatus === "active" || sessionStatus === "paused"}
-      />
-
-      {/* 오디오 웨이브폼 */}
-      <LiveWaveform
-        stream={audioStream}
-        isRecording={isRecording}
-        className="rounded-xl border border-gray-800 bg-gray-900 p-4"
-      />
-
-      {/* 녹음 제어 버튼 행 */}
-      <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* 시작 버튼 (stopped 상태) */}
-          {recordingStatus === "stopped" && (
-            <button
-              onClick={startRecording}
-              disabled={!canStart}
-              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {creatingSession ? (
-                <span className="w-2.5 h-2.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-              ) : (
-                <span className="w-2.5 h-2.5 rounded-full bg-white" />
-              )}
-              {creatingSession ? "세션 생성 중..." : "녹음 시작"}
-            </button>
-          )}
-
-          {/* 재개 버튼 (paused 상태) */}
-          {recordingStatus === "paused" && (
-            <button
-              onClick={resumeRecording}
-              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM6.8 6.2a.8.8 0 011.13-.13l4.2 3.8a.8.8 0 010 1.26l-4.2 3.8A.8.8 0 016.8 13.8V6.2z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              재개
-            </button>
-          )}
-
-          {/* 일시정지 버튼 (recording 상태) */}
-          {recordingStatus === "recording" && (
-            <button
-              onClick={pauseRecording}
-              className="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-amber-500"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 011 1v4a1 1 0 11-2 0V8a1 1 0 011-1z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              일시정지
-            </button>
-          )}
-
-          {/* 중지 버튼 (recording 또는 paused 상태) */}
-          {(recordingStatus === "recording" || recordingStatus === "paused") && (
-            <button
-              onClick={stopRecording}
-              className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-500"
-            >
-              <span className="w-2.5 h-2.5 rounded bg-white" />
-              중지
-            </button>
-          )}
-
-          {/* 세션 저장 버튼 */}
-          {activeSessionId && !isActiveOrPaused && (
-            <button
-              onClick={saveSession}
-              disabled={!canSave}
-              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {saving ? (
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V2m-3-2h6"
-                  />
-                </svg>
-              )}
-              {saving ? "저장 중..." : "세션 저장"}
-            </button>
-          )}
-
-          {/* 녹음 중 / 일시정지 표시 */}
-          {isRecording && (
-            <div className="flex items-center gap-2 ml-auto">
-              <div className="w-2 h-2 rounded-full bg-red-500 animate-ping opacity-75" />
-              <span className="text-xs text-red-400 font-medium">
-                녹음 중
-              </span>
-            </div>
-          )}
-          {isPaused && (
-            <div className="flex items-center gap-2 ml-auto">
-              <div className="w-2 h-2 rounded-full bg-amber-500" />
-              <span className="text-xs text-amber-400 font-medium">
-                일시정지
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* 키보드 단축키 힌트 */}
-        <p className="text-xs text-gray-600 mt-3">
-          Space: 시작/중지, Esc: 종료
-        </p>
-
-        {/* 에러 메시지 */}
-        {saveError && (
-          <p className="text-sm text-red-400 bg-red-900/20 rounded-lg px-3 py-2 mt-3">
-            {saveError}
-          </p>
-        )}
-
-        {/* 저장 성공 메시지 */}
-        {saveSuccess && (
-          <p className="text-sm text-emerald-400 bg-emerald-900/20 rounded-lg px-3 py-2 mt-3">
-            세션이 저장되었습니다! 프로젝트 세션 목록에서 확인할 수 있습니다.
-          </p>
-        )}
-      </div>
-
-      {/* 원문 표시 영역 */}
-      <TranscriptionPanel
-        label="원문"
-        lang={sourceLang}
-        text={currentOriginalText}
-        placeholder="녹음을 시작하면 실시간 원문이 표시되겠습니다..."
-        accentColor="bg-indigo-900/40 text-indigo-400"
-      />
-
-      {/* 번역 표시 영역 */}
-      <TranscriptionPanel
-        label="번역"
-        lang={displayTargetLang}
-        text={currentTranslatedText}
-        placeholder="실시간 번역 결과가 여기에 표시되겠습니다..."
-        accentColor="bg-emerald-900/40 text-emerald-400"
-      />
-
-      {/* 해석 기록 목록 */}
+      {/* 해석 기록 목록 (접기/펼치기) */}
       {interpretations.length > 0 && (
-        <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
-          <h3 className="text-sm font-semibold text-white mb-3">
-            해석 기록
-            <span className="text-gray-500 font-normal ml-2">
-              ({interpretations.length}건)
-            </span>
+        <div className="rounded-2xl border border-gray-800/50 bg-gray-900/30 p-6">
+          <h3 className="text-sm font-semibold text-white mb-4">
+            해석 기록 <span className="text-gray-600 font-normal">({interpretations.length})</span>
           </h3>
           <div
             ref={interpretationsPanelRef}
-            className="space-y-2 max-h-[300px] overflow-y-auto pr-1"
+            className="space-y-3 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent"
           >
             {interpretations.map((item) => (
               <InterpretationItem
@@ -972,24 +1017,31 @@ export default function LivePage() {
         </div>
       )}
 
-      {/* 다중 언어 지원 시 타겟 언어 표시 */}
+      {/* 다중 언어 안내 */}
       {targetLangs.length > 1 && (
-        <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
-          <p className="text-xs text-gray-500 mb-2">타겟 언어</p>
-          <div className="flex flex-wrap gap-2">
-            {targetLangs.map((lang) => (
-              <span
-                key={lang}
-                className="text-xs px-2.5 py-1 rounded-full bg-indigo-900/40 text-indigo-400"
-              >
-                {getLanguageName(lang)}
-              </span>
-            ))}
+        <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
+              <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm text-indigo-200 mb-2">
+                현재 <strong>{getLanguageName(targetLangs[0])}</strong>로 번역 중입니다.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {targetLangs.map((lang) => (
+                  <span
+                    key={lang}
+                    className="text-xs px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300"
+                  >
+                    {getLanguageName(lang)}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
-          <p className="text-xs text-gray-600 mt-2">
-            현재 첫 번째 타겟 언어({getLanguageName(targetLangs[0])})로 번역됩니다.
-            다중 언어 동시 통역은 Soniox API 실제 연동 시 지원됩니다.
-          </p>
         </div>
       )}
     </div>

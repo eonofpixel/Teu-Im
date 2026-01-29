@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogoutButton } from "@/components/logout-button";
+import { OnboardingWizard } from "@/components/OnboardingWizard";
 
 // ─── 네비게이션 아이템 정의 ───────────────────────────────
 
@@ -181,39 +182,44 @@ export function DashboardClient({
   );
 
   return (
-    <div className="flex h-screen bg-gray-950">
-      {/* ── 사이드바 (md 이상 = 항상 표시, md 미만 숨침) ── */}
-      <aside className="hidden md:flex w-64 flex-col border-r border-gray-800 bg-gray-900 h-screen sticky top-0 flex-shrink-0">
-        <SidebarContent pathname={pathname} userEmail={userEmail} userName={userName} />
-      </aside>
+    <>
+      {/* Onboarding wizard for first-time users */}
+      <OnboardingWizard />
 
-      {/* ── 메인 콘텐츠 영역 ── */}
-      <div className="flex-1 flex flex-col overflow-auto min-w-0">
-        {/* 헤더 - 모바일: 타이틀만 / 데스크톱: 기본 헤더 유지 */}
-        <header className="sticky top-0 z-10 flex h-14 min-h-14 items-center border-b border-gray-800 bg-gray-950 px-4 md:px-6">
-          {/* 모바일 헤더: 페이지 타이틀만 표시 */}
-          <h2 className="text-base font-semibold text-white md:hidden">
-            {currentNav?.label ?? "대시보드"}
-          </h2>
+      <div className="flex h-screen bg-gray-950">
+        {/* ── 사이드바 (md 이상 = 항상 표시, md 미만 숨침) ── */}
+        <aside className="hidden md:flex w-64 flex-col border-r border-gray-800 bg-gray-900 h-screen sticky top-0 flex-shrink-0">
+          <SidebarContent pathname={pathname} userEmail={userEmail} userName={userName} />
+        </aside>
 
-          {/* 데스크톱 헤더 우측 영역 */}
-          <div className="flex-1" />
-        </header>
+        {/* ── 메인 콘텐츠 영역 ── */}
+        <div className="flex-1 flex flex-col overflow-auto min-w-0">
+          {/* 헤더 - 모바일: 타이틀만 / 데스크톱: 기본 헤더 유지 */}
+          <header className="sticky top-0 z-10 flex h-14 min-h-14 items-center border-b border-gray-800 bg-gray-950 px-4 md:px-6">
+            {/* 모바일 헤더: 페이지 타이틀만 표시 */}
+            <h2 className="text-base font-semibold text-white md:hidden">
+              {currentNav?.label ?? "대시보드"}
+            </h2>
 
-        {/* 페이지 콘텐츠 - 모바일에서 하단 바 높이만큼 여백 추가 */}
-        <main className="flex-1 p-4 lg:p-6 pb-24 md:pb-6 animate-fade-in">
-          {children}
-        </main>
-      </div>
+            {/* 데스크톱 헤더 우측 영역 */}
+            <div className="flex-1" />
+          </header>
 
-      {/* ── 모바일 하단 네비게이션 바 (md 미만에서만 표시) ── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-20 md:hidden bg-gray-900/95 backdrop-blur-sm border-t border-gray-800 [padding-bottom:env(safe-area-inset-bottom)]">
-        <div className="flex items-center justify-around h-14">
-          {NAV_ITEMS.map((item) => (
-            <MobileNavLink key={item.href} {...item} pathname={pathname} />
-          ))}
+          {/* 페이지 콘텐츠 - 모바일에서 하단 바 높이만큼 여백 추가 */}
+          <main className="flex-1 p-4 lg:p-6 pb-24 md:pb-6 animate-fade-in">
+            {children}
+          </main>
         </div>
-      </nav>
-    </div>
+
+        {/* ── 모바일 하단 네비게이션 바 (md 미만에서만 표시) ── */}
+        <nav className="fixed bottom-0 left-0 right-0 z-20 md:hidden bg-gray-900/95 backdrop-blur-sm border-t border-gray-800 [padding-bottom:env(safe-area-inset-bottom)]">
+          <div className="flex items-center justify-around h-14">
+            {NAV_ITEMS.map((item) => (
+              <MobileNavLink key={item.href} {...item} pathname={pathname} />
+            ))}
+          </div>
+        </nav>
+      </div>
+    </>
   );
 }
