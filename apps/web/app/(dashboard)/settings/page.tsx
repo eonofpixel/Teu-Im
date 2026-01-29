@@ -227,8 +227,9 @@ function ApiSection({
       setError("API 키를 입력해주세요.");
       return;
     }
-    if (!newApiKey.startsWith("sk_")) {
-      setError("올바른 Soniox API 키 형식이 아닙니다. (sk_로 시작해야 합니다)");
+    // Soniox API 키는 64자리 hex 문자열
+    if (!/^[a-f0-9]{64}$/i.test(newApiKey)) {
+      setError("올바른 Soniox API 키 형식이 아닙니다. (64자리 영숫자)");
       return;
     }
 
@@ -306,8 +307,8 @@ function ApiSection({
       return;
     }
 
-    // 키가 올바른 형식인지 확인 (실제 API 호출은 백엔드에서 수행)
-    if (data.soniox_api_key.startsWith("sk_")) {
+    // 키가 올바른 형식인지 확인 (64자리 hex)
+    if (/^[a-f0-9]{64}$/i.test(data.soniox_api_key)) {
       setSuccess("API 키 형식이 올바릅니다. 실제 호출 테스트는 세션 시작 시 검증됩니다.");
     } else {
       setError("저장된 API 키 형식이 올바르지 않습니다.");
@@ -376,7 +377,7 @@ function ApiSection({
               type="password"
               value={newApiKey}
               onChange={(e) => setNewApiKey(e.target.value)}
-              placeholder="sk_live_..."
+              placeholder="64자리 API 키 입력..."
               autoComplete="off"
               className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />

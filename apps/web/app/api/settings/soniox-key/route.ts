@@ -19,7 +19,10 @@ export async function GET() {
     const userDataTyped = userData as { soniox_api_key: string | null } | null;
 
     const hasKey = !!userDataTyped?.soniox_api_key;
-    const maskedKey = hasKey ? 'sk_***' : null;
+    // 마스킹: 앞 8자만 표시
+    const maskedKey = hasKey && userDataTyped?.soniox_api_key
+      ? `${userDataTyped.soniox_api_key.slice(0, 8)}...`
+      : null;
 
     return NextResponse.json({ exists: hasKey, maskedKey });
   } catch (error) {
@@ -40,9 +43,10 @@ export async function POST(request: NextRequest) {
 
     const { apiKey } = await request.json();
 
-    if (!apiKey || !apiKey.startsWith('sk_')) {
+    // Soniox API 키는 64자리 hex 문자열
+    if (!apiKey || !/^[a-f0-9]{64}$/i.test(apiKey)) {
       return NextResponse.json(
-        { error: '올바른 Soniox API 키 형식이 아닙니다' },
+        { error: '올바른 Soniox API 키 형식이 아닙니다 (64자리)' },
         { status: 400 }
       );
     }
